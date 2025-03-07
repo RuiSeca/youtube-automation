@@ -1,0 +1,419 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <title>Analytics - TechWealth Daily</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="header">
+        <button id="mobile-menu-btn" class="mobile-menu-btn">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1><i class="fas fa-robot logo-icon"></i> TechWealth Daily</h1>
+        <div class="nav-links" id="nav-links">
+            <a href="/" class="nav-link">Dashboard</a>
+            <a href="/videos" class="nav-link">Videos</a>
+            <a href="/analytics" class="nav-link active">Analytics</a>
+            <a href="/settings" class="nav-link">Settings</a>
+        </div>
+        <div class="theme-toggle d-flex align-center">
+            <label class="theme-switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+            <span id="theme-label" class="ml-1">Dark Mode</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats-grid mb-3">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-eye"></i></div>
+                <div class="stat-value" id="total-views">0</div>
+                <div class="stat-label">Total Views</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-thumbs-up"></i></div>
+                <div class="stat-value" id="total-likes">0</div>
+                <div class="stat-label">Total Likes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-comments"></i></div>
+                <div class="stat-value" id="total-comments">0</div>
+                <div class="stat-label">Total Comments</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+                <div class="stat-value" id="total-subscribers">0</div>
+                <div class="stat-label">Subscribers</div>
+            </div>
+        </div>
+        
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2><i class="fas fa-chart-line section-icon"></i> Views Over Time</h2>
+                <div class="d-flex justify-between align-center mb-3">
+                    <select id="views-timeframe" class="form-control">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="365">Last Year</option>
+                    </select>
+                    <button id="refresh-views" class="btn btn-outline btn-sm">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+                <div style="height: 300px;">
+                    <canvas id="viewsChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h2><i class="fas fa-chart-bar section-icon"></i> Video Performance</h2>
+                <div class="d-flex justify-between align-center mb-3">
+                    <select id="performance-count" class="form-control">
+                        <option value="5">Top 5 Videos</option>
+                        <option value="10" selected>Top 10 Videos</option>
+                        <option value="all">All Videos</option>
+                    </select>
+                    <div class="d-flex gap-1">
+                        <select id="performance-metric" class="form-control">
+                            <option value="views" selected>Views</option>
+                            <option value="likes">Likes</option>
+                            <option value="comments">Comments</option>
+                            <option value="engagement">Engagement Rate</option>
+                        </select>
+                        <button id="refresh-performance" class="btn btn-outline btn-sm">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div style="height: 300px;">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <h2><i class="fas fa-fire section-icon"></i> Content Performance Analysis</h2>
+            <div class="tab-container">
+                <div class="tabs">
+                    <div class="tab active" data-tab="by-niche">By Niche</div>
+                    <div class="tab" data-tab="by-length">By Length</div>
+                    <div class="tab" data-tab="by-publish-time">By Publish Time</div>
+                </div>
+                
+                <div class="tab-content active" data-tab="by-niche">
+                    <div class="mt-3" style="height: 350px;">
+                        <canvas id="nichePerformanceChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" data-tab="by-length">
+                    <div class="mt-3" style="height: 350px;">
+                        <canvas id="lengthPerformanceChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="tab-content" data-tab="by-publish-time">
+                    <div class="mt-3" style="height: 350px;">
+                        <canvas id="timePerformanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast-container" class="toast-container"></div>
+    
+    <script src="/static/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load overall stats
+            fetch('/api/analytics/overview')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-views').textContent = data.total_views.toLocaleString();
+                    document.getElementById('total-likes').textContent = data.total_likes.toLocaleString();
+                    document.getElementById('total-comments').textContent = data.total_comments.toLocaleString();
+                    document.getElementById('total-subscribers').textContent = data.subscribers.toLocaleString();
+                });
+            
+            // Views over time chart
+            function loadViewsChart(days = 30) {
+                fetch(`/api/analytics/views?days=${days}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const ctx = document.getElementById('viewsChart').getContext('2d');
+                        
+                        if (window.viewsChart) {
+                            window.viewsChart.destroy();
+                        }
+                        
+                        window.viewsChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: data.dates,
+                                datasets: [{
+                                    label: 'Views',
+                                    data: data.views,
+                                    borderColor: '#0066cc',
+                                    backgroundColor: 'rgba(0, 102, 204, 0.1)',
+                                    tension: 0.3,
+                                    fill: true
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        mode: 'index',
+                                        intersect: false
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            precision: 0
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    });
+            }
+            
+            // Video performance chart
+            function loadPerformanceChart(count = 10, metric = 'views') {
+                fetch(`/api/analytics/performance?count=${count}&metric=${metric}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const ctx = document.getElementById('performanceChart').getContext('2d');
+                        
+                        if (window.performanceChart) {
+                            window.performanceChart.destroy();
+                        }
+                        
+                        let color = '#0066cc';
+                        if (metric === 'likes') color = '#28a745';
+                        if (metric === 'comments') color = '#ffc107';
+                        if (metric === 'engagement') color = '#dc3545';
+                        
+                        window.performanceChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: data.titles,
+                                datasets: [{
+                                    label: metric.charAt(0).toUpperCase() + metric.slice(1),
+                                    data: data.values,
+                                    backgroundColor: color
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: false
+                                    },
+                                    tooltip: {
+                                        mode: 'index',
+                                        intersect: false
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            precision: metric === 'engagement' ? 2 : 0
+                                        }
+                                    },
+                                    x: {
+                                        ticks: {
+                                            maxRotation: 45,
+                                            minRotation: 45
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    });
+            }
+            
+            // Niche performance chart
+            function loadNicheChart() {
+                fetch('/api/analytics/by-niche')
+                    .then(response => response.json())
+                    .then(data => {
+                        const ctx = document.getElementById('nichePerformanceChart').getContext('2d');
+                        
+                        if (window.nicheChart) {
+                            window.nicheChart.destroy();
+                        }
+                        
+                        window.nicheChart = new Chart(ctx, {
+                            type: 'radar',
+                            data: {
+                                labels: data.niches,
+                                datasets: [{
+                                    label: 'Average Views',
+                                    data: data.avg_views,
+                                    backgroundColor: 'rgba(0, 102, 204, 0.2)',
+                                    borderColor: '#0066cc',
+                                    pointBackgroundColor: '#0066cc'
+                                }, {
+                                    label: 'Engagement Rate (%)',
+                                    data: data.engagement_rates,
+                                    backgroundColor: 'rgba(40, 167, 69, 0.2)',
+                                    borderColor: '#28a745',
+                                    pointBackgroundColor: '#28a745'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                const label = context.dataset.label || '';
+                                                const value = context.raw.toFixed(1);
+                                                return `${label}: ${value}`;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    });
+            }
+            
+            // Video length performance chart
+            function loadLengthChart() {
+                fetch('/api/analytics/by-length')
+                    .then(response => response.json())
+                    .then(data => {
+                        const ctx = document.getElementById('lengthPerformanceChart').getContext('2d');
+                        
+                        if (window.lengthChart) {
+                            window.lengthChart.destroy();
+                        }
+                        
+                        window.lengthChart = new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: data.length_categories,
+                                datasets: [{
+                                    label: 'Average Views',
+                                    data: data.avg_views,
+                                    backgroundColor: '#0066cc'
+                                }, {
+                                    label: 'Average Watch Time (minutes)',
+                                    data: data.avg_watch_time,
+                                    backgroundColor: '#dc3545'
+                                }, {
+                                    label: 'Retention Rate (%)',
+                                    data: data.retention_rates,
+                                    backgroundColor: '#28a745'
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    });
+            }
+            
+            // Publish time performance chart
+            function loadTimeChart() {
+                fetch('/api/analytics/by-publish-time')
+                    .then(response => response.json())
+                    .then(data => {
+                        const ctx = document.getElementById('timePerformanceChart').getContext('2d');
+                        
+                        if (window.timeChart) {
+                            window.timeChart.destroy();
+                        }
+                        
+                        window.timeChart = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: data.time_slots,
+                                datasets: [{
+                                    label: 'Average Views',
+                                    data: data.avg_views,
+                                    borderColor: '#0066cc',
+                                    backgroundColor: 'rgba(0, 102, 204, 0.1)',
+                                    tension: 0.3,
+                                    fill: true
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                scales: {
+                                    y: {
+                                        beginAtZero: true
+                                    }
+                                }
+                            }
+                        });
+                    });
+            }
+            
+            // Initialize all charts
+            loadViewsChart();
+            loadPerformanceChart();
+            loadNicheChart();
+            loadLengthChart();
+            loadTimeChart();
+            
+            // Set up event listeners for chart controls
+            document.getElementById('views-timeframe').addEventListener('change', function() {
+                loadViewsChart(this.value);
+            });
+            
+            document.getElementById('refresh-views').addEventListener('click', function() {
+                const days = document.getElementById('views-timeframe').value;
+                loadViewsChart(days);
+            });
+            
+            document.getElementById('performance-count').addEventListener('change', function() {
+                const count = this.value;
+                const metric = document.getElementById('performance-metric').value;
+                loadPerformanceChart(count, metric);
+            });
+            
+            document.getElementById('performance-metric').addEventListener('change', function() {
+                const metric = this.value;
+                const count = document.getElementById('performance-count').value;
+                loadPerformanceChart(count, metric);
+            });
+            
+            document.getElementById('refresh-performance').addEventListener('click', function() {
+                const count = document.getElementById('performance-count').value;
+                const metric = document.getElementById('performance-metric').value;
+                loadPerformanceChart(count, metric);
+            });
+        });
+    </script>
+</body>
+</html>
+    

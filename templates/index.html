@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <title>TechWealth Daily - Automation Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+    <div class="header">
+        <button id="mobile-menu-btn" class="mobile-menu-btn">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1><i class="fas fa-robot logo-icon"></i> TechWealth Daily</h1>
+        <div class="nav-links" id="nav-links">
+            <a href="/" class="nav-link active">Dashboard</a>
+            <a href="/videos" class="nav-link">Videos</a>
+            <a href="/analytics" class="nav-link">Analytics</a>
+            <a href="/settings" class="nav-link">Settings</a>
+        </div>
+        <div class="theme-toggle d-flex align-center">
+            <label class="theme-switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+            <span id="theme-label" class="ml-1">Dark Mode</span>
+        </div>
+    </div>
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <div class="alert-icon">
+                            <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
+                        </div>
+                        <div class="alert-content">
+                            <div class="alert-message">{{ message }}</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-film"></i></div>
+                <div class="stat-value" id="total-videos">0</div>
+                <div class="stat-label">Total Videos</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+                <div class="stat-value" id="videos-today">0</div>
+                <div class="stat-label">Videos Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+                <div class="stat-value" id="active-jobs">0</div>
+                <div class="stat-label">Active Jobs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                <div class="stat-value" id="success-rate">0%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="card">
+                <h2><i class="fas fa-play-circle section-icon"></i> Create New Videos</h2>
+                <form id="automationForm" action="/run" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    
+                    <div class="form-group">
+                        <label for="niche">Content Niche:</label>
+                        <input type="text" id="niche" name="niche" class="form-control" required placeholder="e.g., fintech investing, cryptocurrency trends">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="count">Number of Videos:</label>
+                        <select id="count" name="count" class="form-control">
+                            <option value="1">1 Video</option>
+                            <option value="2">2 Videos</option>
+                            <option value="3" selected>3 Videos</option>
+                            <option value="5">5 Videos</option>
+                            <option value="10">10 Videos</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="style">Content Style:</label>
+                        <select id="style" name="style" class="form-control">
+                            <option value="informative">Informative</option>
+                            <option value="entertaining">Entertaining</option>
+                            <option value="educational">Educational</option>
+                            <option value="casual">Casual/Conversational</option>
+                            <option value="professional" selected>Professional</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="audience">Target Audience:</label>
+                        <select id="audience" name="audience" class="form-control">
+                            <option value="general">General</option>
+                            <option value="beginners">Beginners</option>
+                            <option value="intermediate" selected>Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                            <option value="professionals">Professionals</option>
+                        </select>
+                    </div>
+                    
+                    <div class="tab-container">
+                        <div class="tabs">
+                            <div class="tab active" data-tab="basic">Basic</div>
+                            <div class="tab" data-tab="advanced">Advanced</div>
+                        </div>
+                        
+                        <div class="tab-content active" data-tab="basic">
+                            <div class="checkbox-group mt-2">
+                                <input type="checkbox" id="auto-upload" name="auto_upload" checked>
+                                <label for="auto-upload">Automatically upload to YouTube</label>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" data-tab="advanced">
+                            <div class="form-group mt-2">
+                                <label for="video-length">Video Length:</label>
+                                <select id="video-length" name="video_length" class="form-control">
+                                    <option value="short">Short (2-3 minutes)</option>
+                                    <option value="medium" selected>Medium (5-7 minutes)</option>
+                                    <option value="long">Long (10-15 minutes)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="custom-thumbnail">Custom Thumbnail:</label>
+                                <div id="dropzone" class="dropzone">
+                                    <div class="dropzone-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                                    <div class="dropzone-text">Drag & drop thumbnail image here</div>
+                                    <div class="dropzone-hint">or click to browse files</div>
+                                    <input type="file" id="file-input" name="thumbnail" accept="image/*" style="display: none;">
+                                </div>
+                                <div id="file-preview"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary mt-2"><i class="fas fa-cogs"></i> Start Automation</button>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h2><i class="fas fa-tasks section-icon"></i> Active Jobs</h2>
+                <div id="jobsList">
+                    <div class="empty-state">
+                        <i class="fas fa-tasks"></i>
+                        <p>No active jobs. Start a new automation job to see status here.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2><i class="fas fa-film section-icon"></i> Recent Videos</h2>
+            <div id="videoGallery" class="video-gallery">
+                <div class="empty-state">
+                    <i class="fas fa-video"></i>
+                    <p>No videos generated yet. Start creating content to see your videos here.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast-container" class="toast-container"></div>
+    
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
+    

@@ -1,0 +1,207 @@
+
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <title>Videos - TechWealth Daily</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+</head>
+<body>
+    <div class="header">
+        <button id="mobile-menu-btn" class="mobile-menu-btn">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1><i class="fas fa-robot logo-icon"></i> TechWealth Daily</h1>
+        <div class="nav-links" id="nav-links">
+            <a href="/" class="nav-link">Dashboard</a>
+            <a href="/videos" class="nav-link active">Videos</a>
+            <a href="/analytics" class="nav-link">Analytics</a>
+            <a href="/settings" class="nav-link">Settings</a>
+        </div>
+        <div class="theme-toggle d-flex align-center">
+            <label class="theme-switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+            <span id="theme-label" class="ml-1">Dark Mode</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2><i class="fas fa-film section-icon"></i> Video Library</h2>
+            
+            <div class="d-flex justify-between align-center mb-3">
+                <div class="d-flex align-center gap-2">
+                    <select id="filter-status" class="form-control">
+                        <option value="all">All Videos</option>
+                        <option value="uploaded">Uploaded</option>
+                        <option value="local">Local Only</option>
+                    </select>
+                    
+                    <select id="filter-date" class="form-control">
+                        <option value="all">All Dates</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                
+                <div class="d-flex align-center gap-2">
+                    <input type="text" id="search-videos" class="form-control" placeholder="Search videos...">
+                    <button id="refresh-videos" class="btn btn-outline">
+                        <i class="fas fa-sync-alt"></i> Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <div id="videoLibrary" class="video-gallery">
+                <div class="empty-state">
+                    <i class="fas fa-video"></i>
+                    <p>Loading videos...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast-container" class="toast-container"></div>
+    
+    <script src="/static/js/main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            function loadVideos(filters = {}) {
+                fetch('/api/videos?' + new URLSearchParams(filters))
+                    .then(response => response.json())
+                    .then(data => {
+                        const videoLibrary = document.getElementById('videoLibrary');
+                        
+                        if (data.videos && data.videos.length > 0) {
+                            let videosHTML = '';
+                            data.videos.forEach(video => {
+                                videosHTML += `
+                                    <div class="video-item">
+                                        <div class="video-thumbnail">
+                                            <img src="${video.thumbnail || '/static/images/placeholder.jpg'}" alt="${video.title}">
+                                            <a href="#" class="play-button" data-video-path="${video.path}" data-video-title="${video.title}"></a>
+                                        </div>
+                                        <div class="video-info">
+                                            <h3 class="video-title">${video.title}</h3>
+                                            <div class="video-meta">
+                                                <span><i class="far fa-calendar-alt"></i> ${video.date}</span>
+                                                <span class="badge badge-${video.uploaded ? 'success' : 'warning'}">${video.uploaded ? 'Uploaded' : 'Local'}</span>
+                                            </div>
+                                            <div class="video-options">
+                                                <button class="btn btn-sm btn-outline preview-video" data-video-path="${video.path}" data-video-title="${video.title}">
+                                                    <i class="fas fa-play"></i> Preview
+                                                </button>
+                                                ${!video.uploaded ? `
+                                                <button class="btn btn-sm btn-primary upload-video" data-video-path="${video.path}" data-video-title="${video.title}">
+                                                    <i class="fas fa-upload"></i> Upload
+                                                </button>
+                                                ` : `
+                                                <button class="btn btn-sm btn-outline view-stats" data-video-id="${video.id}">
+                                                    <i class="fas fa-chart-bar"></i> Stats
+                                                </button>
+                                                `}
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                            videoLibrary.innerHTML = videosHTML;
+                            
+                            // Add event listeners
+                            document.querySelectorAll('.preview-video, .play-button').forEach(btn => {
+                                btn.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    const videoPath = btn.getAttribute('data-video-path');
+                                    const videoTitle = btn.getAttribute('data-video-title');
+                                    openVideoModal(videoPath, videoTitle);
+                                });
+                            });
+                            
+                            document.querySelectorAll('.upload-video').forEach(btn => {
+                                btn.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    const videoPath = btn.getAttribute('data-video-path');
+                                    const videoTitle = btn.getAttribute('data-video-title');
+                                    if (confirm(`Are you sure you want to upload "${videoTitle}" to YouTube?`)) {
+                                        uploadVideo(videoPath, videoTitle);
+                                    }
+                                });
+                            });
+                            
+                            document.querySelectorAll('.view-stats').forEach(btn => {
+                                btn.addEventListener('click', (e) => {
+                                    e.preventDefault();
+                                    const videoId = btn.getAttribute('data-video-id');
+                                    window.location.href = `/analytics/video/${videoId}`;
+                                });
+                            });
+                            
+                        } else {
+                            videoLibrary.innerHTML = `
+                                <div class="empty-state">
+                                    <i class="fas fa-video"></i>
+                                    <p>No videos found matching your criteria.</p>
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        const videoLibrary = document.getElementById('videoLibrary');
+                        videoLibrary.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Error loading videos. Please try again.</p>
+                            </div>
+                        `;
+                    });
+            }
+            
+            // Load videos on page load
+            loadVideos();
+            
+            // Set up filter change events
+            document.getElementById('filter-status').addEventListener('change', function() {
+                const status = this.value;
+                const date = document.getElementById('filter-date').value;
+                const search = document.getElementById('search-videos').value;
+                loadVideos({ status, date, search });
+            });
+            
+            document.getElementById('filter-date').addEventListener('change', function() {
+                const date = this.value;
+                const status = document.getElementById('filter-status').value;
+                const search = document.getElementById('search-videos').value;
+                loadVideos({ status, date, search });
+            });
+            
+            // Set up search
+            let searchTimeout;
+            document.getElementById('search-videos').addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const search = this.value;
+                    const status = document.getElementById('filter-status').value;
+                    const date = document.getElementById('filter-date').value;
+                    loadVideos({ status, date, search });
+                }, 500);
+            });
+            
+            // Refresh button
+            document.getElementById('refresh-videos').addEventListener('click', function() {
+                const status = document.getElementById('filter-status').value;
+                const date = document.getElementById('filter-date').value;
+                const search = document.getElementById('search-videos').value;
+                loadVideos({ status, date, search });
+            });
+        });
+    </script>
+</body>
+</html>
+    

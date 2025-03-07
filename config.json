@@ -1,0 +1,33 @@
+{
+    "content_types": [
+        "how_to",
+        "top_10",
+        "explainer"
+    ],
+    "video_length": "short",
+    "target_audience": "general",
+    "style": "informative",
+    "upload_schedule": {
+        "frequency": "daily",
+        "time": "15:00"
+    },
+    "directories": {
+        "scripts": "scripts",
+        "audio": "audio",
+        "video": "video",
+        "thumbnails": "thumbnails",
+        "output": "output"
+    },
+    "shorts_settings": {
+        "enabled": true,
+        "max_duration": 60,
+        "vertical_format": true,
+        "fast_paced": true
+    },
+    "api_settings": {
+        "retry_attempts": 3,
+        "use_api_quota": 0.6,
+        "preferred_model": "gpt-3.5-turbo"
+    },
+    "shorts_mode": true
+}
