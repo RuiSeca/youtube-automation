@@ -1383,6 +1383,47 @@ def save_youtube_credentials(credentials):
         return False
 
 # Helper functions for video management
+# Add this function to web_interface.py to help with debugging thumbnails
+def debug_thumbnails():
+    """Check thumbnail paths and print diagnostic information."""
+    thumbnail_dir = automation.config['directories'].get('thumbnails', 'thumbnails')
+    
+    print("\n=== THUMBNAIL DIAGNOSTICS ===")
+    
+    # Check if directory exists
+    print(f"Checking thumbnail directory: {thumbnail_dir}")
+    if not os.path.exists(thumbnail_dir):
+        print(f"ERROR: Thumbnail directory does not exist. Creating it...")
+        os.makedirs(thumbnail_dir, exist_ok=True)
+    else:
+        print(f"✓ Thumbnail directory exists")
+    
+    # List files in the directory
+    try:
+        files = os.listdir(thumbnail_dir)
+        print(f"Found {len(files)} files in thumbnail directory:")
+        for file in files[:10]:  # Show first 10 files
+            print(f"  - {file}")
+        if len(files) > 10:
+            print(f"  ... and {len(files) - 10} more")
+    except Exception as e:
+        print(f"Error listing files: {str(e)}")
+    
+    # Check sample video paths
+    print("\nChecking sample video paths:")
+    videos = get_video_list(shorts_only=True)[:3]  # Get first 3 videos
+    for video in videos:
+        title_base = os.path.splitext(video.get('path', ''))[0]
+        possible_thumbnail_name = f"{title_base}.png"
+        possible_thumbnail = os.path.join(thumbnail_dir, possible_thumbnail_name)
+        print(f"Video: {video.get('title')}")
+        print(f"  Looking for thumbnail: {possible_thumbnail}")
+        print(f"  Thumbnail exists: {os.path.exists(possible_thumbnail)}")
+    
+    print("===========================\n")
+    return True
+
+# Fix the thumbnail path logic in get_video_list function
 def get_video_list(shorts_only=False):
     """Get list of videos with option to filter for Shorts only."""
     video_dir = automation.config['directories'].get('output', 'output')
@@ -1406,9 +1447,10 @@ def get_video_list(shorts_only=False):
     for ext in ['.mp4', '.avi', '.mov']:
         video_files.extend(glob.glob(os.path.join(video_dir, f'*{ext}')))
     
+    print(f"Found {len(video_files)} videos in {video_dir}")
+    
     # If there are actual video files, use those
     if video_files:
-        print(f"Found {len(video_files)} videos in {video_dir}")
         for i, video_file in enumerate(video_files):
             basename = os.path.basename(video_file)
             
@@ -1432,11 +1474,38 @@ def get_video_list(shorts_only=False):
                 
             thumbnail_dir = automation.config['directories'].get('thumbnails', 'thumbnails')
             
+            # Use just the basename without _Short suffix for the thumbnail
             thumbnail_basename = f"{title_base}.png"
-            possible_thumbnail = os.path.join(thumbnail_dir, thumbnail_basename)
             
-            if os.path.exists(possible_thumbnail):
-                thumbnail_path = f"/thumbnails/{thumbnail_basename}"
+            # FIX: Try different thumbnail naming patterns
+            possible_thumbnails = [
+                # Original pattern (base name + .png)
+                os.path.join(thumbnail_dir, thumbnail_basename),
+                
+                # Try without _Short suffix
+                os.path.join(thumbnail_dir, title_base.replace("_Short", "") + ".png"),
+                
+                # Try with sanitized title
+                os.path.join(thumbnail_dir, title.replace(" ", "_") + ".png"),
+                
+                # Try just the video title part before any suffix
+                os.path.join(thumbnail_dir, title_base.split('_Short')[0] + ".png")
+            ]
+            
+            # Check all possible patterns
+            found_thumbnail = False
+            for possible_thumbnail in possible_thumbnails:
+                if os.path.exists(possible_thumbnail):
+                    # Get just the filename for the URL path
+                    thumbnail_filename = os.path.basename(possible_thumbnail)
+                    thumbnail_path = f"/thumbnails/{thumbnail_filename}"
+                    found_thumbnail = True
+                    print(f"Found thumbnail at {possible_thumbnail}")
+                    break
+            
+            if not found_thumbnail:
+                # Debug which thumbnail we were looking for
+                print(f"Thumbnail not found at {possible_thumbnails[0]}, using placeholder")
             
             # Get file modification time as date
             mtime = os.path.getmtime(video_file)
@@ -1472,6 +1541,124 @@ def get_video_list(shorts_only=False):
     
     return videos
 
+# Fix to thumbnail creation in the YouTubeShortsAutomationSystem class
+def fix_thumbnail_creation(idea, title):
+    """Create a proper thumbnail with the right naming convention."""
+    try:
+        # Get the thumbnails directory from config
+        thumbnails_dir = automation.config['directories']['thumbnails']
+        os.makedirs(thumbnails_dir, exist_ok=True)
+        
+        # Create a sanitized title for the filename
+        # NOTE: This should match the pattern used in the automation system
+        safe_title = idea['title'].replace(' ', '_')
+        for char in [':', '/', '\\', '?', '*', '"', '<', '>', '|', "'", '.', ',']:
+            safe_title = safe_title.replace(char, '-')
+        
+        # Create the thumbnail path - without the _Short suffix
+        thumbnail_path = os.path.join(thumbnails_dir, f"{safe_title}.png")
+        
+        # Create a simple thumbnail
+        from PIL import Image, ImageDraw, ImageFont
+        
+        # Create a vertical image for Shorts (9:16 ratio)
+        img = Image.new('RGB', (720, 1280), color=(33, 33, 33))
+        draw = ImageDraw.Draw(img)
+        
+        # Draw a border
+        draw.rectangle([(40, 40), (680, 1240)], outline=(100, 100, 200), width=8)
+        
+        # Draw a gradient background
+        for y in range(80, 1200):
+            # Create a gradient from dark blue to light blue
+            color = (
+                int(33 + (y/1200) * 60),  # R value
+                int(33 + (y/1200) * 70),  # G value
+                int(100 + (y/1200) * 155)  # B value
+            )
+            draw.line([(80, y), (640, y)], fill=color)
+        
+        # Add title text
+        try:
+            # Use default font if available
+            font_size = 80
+            font = None
+            try:
+                # Try system fonts
+                for font_name in ['arial.ttf', 'Arial.ttf', 'Verdana.ttf', 'times.ttf', 'Times.ttf']:
+                    try:
+                        font = ImageFont.truetype(font_name, font_size)
+                        break
+                    except:
+                        continue
+            except:
+                pass
+                
+            if font is None:
+                font = ImageFont.load_default()
+                
+            # Prepare text (shorten if needed)
+            text = title
+            if len(text) > 30:
+                text = text[:27] + "..."
+            
+            # Center text
+            text_width = 600  # approximate
+            position = ((720 - text_width) // 2, 300)
+            
+            # Draw text shadow
+            shadow_offset = 3
+            draw.text((position[0] + shadow_offset, position[1] + shadow_offset), 
+                    text, fill=(0, 0, 0), font=font)
+            
+            # Draw text
+            draw.text(position, text, fill=(255, 255, 255), font=font)
+            
+            # Add #SHORTS text
+            shorts_text = "#SHORTS"
+            shorts_position = ((720 - 300) // 2, 1100)
+            draw.text(shorts_position, shorts_text, fill=(255, 100, 100), font=font)
+            
+        except Exception as e:
+            print(f"Error adding text to thumbnail: {str(e)}")
+            draw.text((360, 640), title[:20], fill=(255, 255, 255))
+        
+        # Save the image
+        img.save(thumbnail_path, format="PNG")
+        print(f"Created thumbnail at {thumbnail_path}")
+        
+        return thumbnail_path
+    
+    except Exception as e:
+        print(f"Error creating thumbnail: {str(e)}")
+        return None
+
+# Route to manually regenerate thumbnails for all videos
+@app.route('/regenerate_thumbnails')
+def regenerate_thumbnails():
+    """Regenerate thumbnails for all videos."""
+    videos = get_video_list(shorts_only=True)
+    count = 0
+    
+    for video in videos:
+        title = video['title']
+        # Create a dummy idea with the title
+        idea = {
+            'title': title,
+            'description': f"#Shorts video about {title}",
+            'key_points': ["Key point 1", "Key point 2"],
+            'keywords': ["shorts", "youtubeshorts"]
+        }
+        
+        thumbnail_path = fix_thumbnail_creation(idea, title)
+        if thumbnail_path:
+            count += 1
+    
+    return jsonify({
+        'success': True,
+        'message': f"Regenerated {count} thumbnails successfully"
+    })
+    
 # Helper functions for analytics data
 def generate_random_views_data(start_date, end_date):
     """Generate random views data for analytics demo."""
