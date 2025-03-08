@@ -6,24 +6,41 @@ using Flask. It features a modern responsive design optimized for quick short-fo
 """
 
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session, send_from_directory
-from flask_wtf.csrf import CSRFProtect
 import os
 import json
 import threading
 import glob
 import secrets
 import time
+import pickle
+import random
 from datetime import datetime, timedelta
 import re
 import shutil
 import subprocess
-import random
 from werkzeug.utils import secure_filename
 from youtube_shorts_automation import YouTubeShortsAutomationSystem
 
+# YouTube API imports
+import google.oauth2.credentials
+from google_auth_oauthlib.flow import InstalledAppFlow, Flow
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = secrets.token_hex(16)  # Generate a secure random key
-csrf = CSRFProtect(app)  # Enable CSRF protection
+
+# YouTube API Settings
+YOUTUBE_CLIENT_SECRETS_FILE = "client_secrets.json"
+YOUTUBE_API_SERVICE_NAME = "youtube"
+YOUTUBE_API_VERSION = "v3"
+YOUTUBE_SCOPES = [
+    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/youtube.upload",
+    "https://www.googleapis.com/auth/youtube.force-ssl"
+]
+YOUTUBE_TOKEN_FILE = "youtube_token.pickle"
 
 # Initialize the Shorts automation system
 automation = YouTubeShortsAutomationSystem()
@@ -474,125 +491,410 @@ def save_shorts_settings():
             'message': 'Shorts settings updated successfully'
         })
 
-# API endpoint for saving YouTube settings
-@app.route('/settings/youtube', methods=['POST'])
-def save_youtube_settings():
-    if request.method == 'POST':
-        # Get or create shorts_settings in config
-        if 'shorts_settings' not in automation.config:
-            automation.config['shorts_settings'] = {}
-            
-        # Update YouTube settings
-        privacy_status = request.form.get('privacy_status', 'private')
-        automation.config['shorts_settings']['privacy_status'] = privacy_status
-        
-        # Update tags
-        shorts_tags = request.form.get('shorts_tags', '#shorts, #youtubeshorts')
-        automation.config['shorts_settings']['tags'] = shorts_tags
-        
-        # Update notify subscribers setting
-        notify_subscribers = request.form.get('notify_subscribers', 'off') == 'on'
-        automation.config['shorts_settings']['notify_subscribers'] = notify_subscribers
-        
-        # In a real application, you would save these to a config file
-        # For demo purposes, we'll just update them in memory
-        
+# YouTube Integration Routes
+
+@app.route('/youtube/connect')
+def youtube_connect():
+    """Show the YouTube connection page."""
+    return render_template('youtube_auth.html')
+
+@app.route('/api/youtube/auth')
+def youtube_auth():
+    """Handle YouTube API authentication."""
+    # Check if we're disconnecting
+    if request.args.get('disconnect') == 'true':
+        if os.path.exists(YOUTUBE_TOKEN_FILE):
+            os.remove(YOUTUBE_TOKEN_FILE)
         return jsonify({
             'success': True,
-            'message': 'YouTube settings updated successfully'
+            'message': 'Successfully disconnected from YouTube.'
         })
-
-# API endpoint for saving advanced settings
-@app.route('/settings/advanced', methods=['POST'])
-def save_advanced_settings():
-    if request.method == 'POST':
-        # Get or create API settings in config
-        if 'api_settings' not in automation.config:
-            automation.config['api_settings'] = {}
-            
-        # Update API settings
-        retry_attempts = int(request.form.get('api_retry_attempts', 3))
-        automation.config['api_settings']['retry_attempts'] = retry_attempts
+    
+    # Check if we should force a refresh
+    force_refresh = request.args.get('force_refresh') == 'true'
+    
+    # Try to get credentials
+    credentials = get_youtube_credentials(force_refresh)
+    
+    if not credentials:
+        # Need to start OAuth flow
+        flow = Flow.from_client_secrets_file(
+            YOUTUBE_CLIENT_SECRETS_FILE, 
+            scopes=YOUTUBE_SCOPES,
+            redirect_uri=url_for('youtube_oauth_callback', _external=True)
+        )
         
-        # Update preferred model
-        preferred_model = request.form.get('preferred_model', 'gpt-3.5-turbo')
-        automation.config['api_settings']['preferred_model'] = preferred_model
+        # Generate the authorization URL
+        authorization_url, state = flow.authorization_url(
+            access_type='offline',
+            include_granted_scopes='true',
+            prompt='consent' if force_refresh else None
+        )
         
-        # Update API quota
-        api_quota = int(request.form.get('api_quota', 60))
-        automation.config['api_settings']['use_api_quota'] = api_quota / 100.0
-        
-        # Update auto cleanup setting
-        auto_cleanup = request.form.get('auto_cleanup', 'off') == 'on'
-        automation.config['api_settings']['auto_cleanup'] = auto_cleanup
-        
-        # In a real application, you would save these to a config file
-        # For demo purposes, we'll just update them in memory
+        # Store the state for later validation
+        session['youtube_oauth_state'] = state
         
         return jsonify({
-            'success': True,
-            'message': 'Advanced settings updated successfully'
+            'success': False,
+            'auth_required': True,
+            'auth_url': authorization_url
         })
+    
+    # If we have credentials, return success
+    return jsonify({
+        'success': True,
+        'message': 'Already authenticated with YouTube.'
+    })
 
-# API endpoint for clearing cache
-@app.route('/settings/clear-cache', methods=['POST'])
-def clear_cache():
-    if request.method == 'POST':
-        # In a real application, you would implement actual cache clearing logic
-        # For demo purposes, we'll just return success
+@app.route('/api/youtube/callback')
+def youtube_oauth_callback():
+    """Handle the OAuth callback from YouTube."""
+    # Get the authorization code from the request
+    code = request.args.get('code')
+    if not code:
+        flash('Authentication error: No authorization code received.', 'error')
+        return redirect(url_for('settings'))
+    
+    try:
+        # Use the authorization code to get credentials
+        flow = Flow.from_client_secrets_file(
+            YOUTUBE_CLIENT_SECRETS_FILE,
+            scopes=YOUTUBE_SCOPES,
+            redirect_uri=url_for('youtube_oauth_callback', _external=True)
+        )
+        flow.fetch_token(code=code)
         
+        # Save the credentials
+        credentials = flow.credentials
+        save_youtube_credentials(credentials)
+        
+        flash('Successfully connected to YouTube!', 'success')
+    except Exception as e:
+        flash(f'Authentication error: {str(e)}', 'error')
+    
+    return redirect(url_for('settings'))
+
+@app.route('/api/youtube/channel')
+def youtube_channel_info():
+    """Get information about the connected YouTube channel."""
+    credentials = get_youtube_credentials()
+    if not credentials:
         return jsonify({
-            'success': True,
-            'message': 'Cache cleared successfully'
+            'success': False,
+            'message': 'Not authenticated with YouTube.'
         })
-
-# API endpoint for resetting all settings
-@app.route('/settings/reset', methods=['POST'])
-def reset_settings():
-    if request.method == 'POST':
-        # Reset API keys individually
-        automation.api_keys["openai"] = ""
-        automation.api_keys["elevenlabs"] = ""
-        automation.api_keys["pexels"] = ""
-        automation.api_keys["youtube"] = ""
+    
+    try:
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
         
-        # Reset config to defaults
-        automation.config = {
-            "content_types": ["how_to", "top_10", "explainer"],
-            "video_length": "short",
-            "target_audience": "general",
-            "style": "engaging",
-            "upload_schedule": {
-                "frequency": "daily",
-                "time": "15:00"
-            },
-            "directories": {
-                "scripts": "scripts",
-                "audio": "audio",
-                "video": "video",
-                "thumbnails": "thumbnails",
-                "output": "output",
-                "analytics": "analytics"
-            },
-            "api_settings": {
-                "retry_attempts": 3,
-                "use_api_quota": 0.8,
-                "preferred_model": "gpt-3.5-turbo"
-            },
-            "shorts_mode": True,
-            "shorts_settings": {
-                "enabled": True,
-                "max_duration": 60,
-                "vertical_format": True,
-                "fast_paced": True
-            }
+        # Get the channel information
+        channels_response = youtube.channels().list(
+            part="snippet,statistics,contentDetails",
+            mine=True
+        ).execute()
+        
+        if not channels_response['items']:
+            return jsonify({
+                'success': False,
+                'message': 'No YouTube channel found for this account.'
+            })
+        
+        channel = channels_response['items'][0]
+        channel_info = {
+            'id': channel['id'],
+            'title': channel['snippet']['title'],
+            'description': channel['snippet']['description'],
+            'thumbnail': channel['snippet']['thumbnails']['default']['url'],
+            'subscriberCount': channel['statistics']['subscriberCount'],
+            'videoCount': channel['statistics']['videoCount'],
+            'viewCount': channel['statistics']['viewCount'],
+            'publishedAt': channel['snippet']['publishedAt']
         }
         
         return jsonify({
             'success': True,
-            'message': 'All settings have been reset to defaults'
+            'channel': channel_info
         })
+    except HttpError as e:
+        return jsonify({
+            'success': False,
+            'message': f'YouTube API error: {str(e)}'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error fetching channel info: {str(e)}'
+        })
+
+@app.route('/api/youtube/analytics')
+def youtube_analytics():
+    """Get analytics data from the YouTube API."""
+    credentials = get_youtube_credentials()
+    if not credentials:
+        return jsonify({
+            'success': False,
+            'message': 'Not authenticated with YouTube.'
+        })
+    
+    try:
+        # Build the YouTube Data API and Analytics API clients
+        youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+        youtube_analytics = build('youtubeAnalytics', 'v2', credentials=credentials)
         
+        # Get channel ID
+        channels_response = youtube.channels().list(
+            part="id",
+            mine=True
+        ).execute()
+        
+        if not channels_response['items']:
+            return jsonify({
+                'success': False,
+                'message': 'No YouTube channel found for this account.'
+            })
+        
+        channel_id = channels_response['items'][0]['id']
+        
+        # Get analytics data
+        # Default to last 30 days if not specified
+        start_date = request.args.get('start_date', (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+        end_date = request.args.get('end_date', datetime.now().strftime('%Y-%m-%d'))
+        
+        # Get basic report data
+        analytics_response = youtube_analytics.reports().query(
+            ids=f'channel=={channel_id}',
+            startDate=start_date,
+            endDate=end_date,
+            metrics='views,likes,comments,shares,subscribersGained',
+            dimensions='day',
+            sort='day'
+        ).execute()
+        
+        # Format data for charts
+        views_data = []
+        if 'rows' in analytics_response:
+            for row in analytics_response['rows']:
+                views_data.append({
+                    'date': row[0],
+                    'views': row[1],
+                    'likes': row[2],
+                    'comments': row[3],
+                    'shares': row[4],
+                    'subscribers': row[5]
+                })
+        
+        # Get top videos
+        top_videos_response = youtube_analytics.reports().query(
+            ids=f'channel=={channel_id}',
+            startDate=start_date,
+            endDate=end_date,
+            metrics='views,likes,comments,shares',
+            dimensions='video',
+            sort='-views',
+            maxResults=10
+        ).execute()
+        
+        # Get video details for the IDs
+        top_videos = []
+        if 'rows' in top_videos_response:
+            video_ids = [row[0] for row in top_videos_response['rows']]
+            
+            if video_ids:
+                videos_response = youtube.videos().list(
+                    part="snippet,statistics",
+                    id=','.join(video_ids)
+                ).execute()
+                
+                video_data = {item['id']: item for item in videos_response.get('items', [])}
+                
+                for row in top_videos_response['rows']:
+                    video_id = row[0]
+                    if video_id in video_data:
+                        video = video_data[video_id]
+                        thumbnail = video['snippet']['thumbnails'].get('maxres') or \
+                                  video['snippet']['thumbnails'].get('high') or \
+                                  video['snippet']['thumbnails'].get('default')
+                        
+                        top_videos.append({
+                            'id': video_id,
+                            'title': video['snippet']['title'],
+                            'views': row[1],
+                            'likes': row[2],
+                            'comments': row[3],
+                            'shares': row[4],
+                            'thumbnail': thumbnail['url'],
+                            'publish_date': video['snippet']['publishedAt'],
+                            'ctr': f"{(row[2] / row[1] * 100):.1f}%" if row[1] > 0 else "0%",
+                        })
+        
+        # Get demographics and other data (mocked for this example)
+        # In a real implementation, you would get this from the YouTube Analytics API
+        
+        return jsonify({
+            'success': True,
+            'views_data': views_data,
+            'top_videos': top_videos,
+            'summary': {
+                'total_views': sum(item['views'] for item in views_data) if views_data else 0,
+                'total_likes': sum(item['likes'] for item in views_data) if views_data else 0,
+                'total_comments': sum(item['comments'] for item in views_data) if views_data else 0,
+                'total_shares': sum(item['shares'] for item in views_data) if views_data else 0,
+                'new_subscribers': sum(item['subscribers'] for item in views_data) if views_data else 0,
+            }
+        })
+    except HttpError as e:
+        return jsonify({
+            'success': False,
+            'message': f'YouTube API error: {str(e)}'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error fetching analytics: {str(e)}'
+        })
+
+@app.route('/api/youtube/settings', methods=['POST'])
+def youtube_settings():
+    """Save YouTube settings."""
+    if request.method == 'POST':
+        # Get settings data
+        data = request.form.to_dict()
+        if request.is_json:
+            data = request.json
+        
+        # Update config with YouTube settings
+        if 'shorts_settings' not in automation.config:
+            automation.config['shorts_settings'] = {}
+        
+        # Update privacy setting
+        if 'privacy_status' in data:
+            automation.config['shorts_settings']['privacy_status'] = data['privacy_status']
+        
+        # Update tags
+        if 'shorts_tags' in data:
+            tags = data['shorts_tags']
+            if isinstance(tags, str):
+                tags = [tag.strip() for tag in tags.split(',')]
+            automation.config['shorts_settings']['tags'] = tags
+        
+        # Update notify subscribers setting
+        notify = data.get('notify_subscribers') == 'on' or data.get('notify_subscribers') == 'true'
+        automation.config['shorts_settings']['notify_subscribers'] = notify
+        
+        # Save config to file
+        try:
+            with open('config.json', 'w') as f:
+                json.dump(automation.config, f, indent=4)
+        except Exception as e:
+            return jsonify({
+                'success': False,
+                'message': f'Error saving YouTube settings: {str(e)}'
+            })
+        
+        return jsonify({
+            'success': True,
+            'message': 'YouTube settings saved successfully.'
+        })
+
+@app.route('/api/youtube/clear_cache', methods=['POST'])
+def clear_youtube_cache():
+    """Clear YouTube cache including authentication tokens."""
+    try:
+        # Remove token file
+        if os.path.exists(YOUTUBE_TOKEN_FILE):
+            os.remove(YOUTUBE_TOKEN_FILE)
+            
+        return jsonify({
+            'success': True,
+            'message': 'YouTube cache cleared successfully.'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'Error clearing YouTube cache: {str(e)}'
+        })
+
+# API endpoint for mock analytics data (for development without YouTube API access)
+@app.route('/api/analytics/mock')
+def mock_analytics_data():
+    """Generate mock analytics data for development."""
+    # This function provides mock data when we don't have YouTube API access
+    
+    start_date = request.args.get('start_date', (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d'))
+    end_date = request.args.get('end_date', datetime.now().strftime('%Y-%m-%d'))
+    
+    # Generate daily views data
+    views_data = generate_random_views_data(start_date, end_date)
+    
+    # Generate engagement data
+    engagement_data = {
+        'likes': random.randint(2000, 5000),
+        'comments': random.randint(400, 1000),
+        'shares': random.randint(200, 600),
+        'saves': random.randint(100, 400),
+        'subscribes': random.randint(100, 300)
+    }
+    
+    # Generate device data
+    device_data = {
+        'devices': ['Mobile', 'Tablet', 'Desktop', 'TV', 'Other'],
+        'percentages': [78, 8, 12, 1, 1]  # Mobile dominant for Shorts
+    }
+    
+    # Generate demographics data
+    demographics_data = {
+        'age_groups': ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'],
+        'male': [28, 35, 15, 8, 4, 2],
+        'female': [25, 32, 18, 10, 3, 1],
+        'other': [5, 8, 3, 2, 1, 0]
+    }
+    
+    # Generate geographic data
+    geographic_data = {
+        'countries': ['United States', 'India', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'Other'],
+        'percentages': [45, 18, 12, 8, 5, 4, 8]
+    }
+    
+    # Generate performance data
+    performance_data = {
+        'videos': [f"Video {i+1}" for i in range(8)],
+        'views': [random.randint(1000, 5000) for _ in range(8)],
+        'engagement_rates': [random.uniform(5.0, 15.0) for _ in range(8)]
+    }
+    
+    # Get top videos
+    top_videos = get_top_videos(5)
+    
+    return jsonify({
+        'success': True,
+        'views_data': views_data,
+        'top_videos': top_videos,
+        'engagement_data': engagement_data,
+        'demographics_data': demographics_data,
+        'geographic_data': geographic_data,
+        'device_data': device_data,
+        'performance_data': performance_data,
+        'summary': {
+            'total_views': sum(point['views'] for point in views_data),
+            'total_likes': random.randint(1000, 5000),
+            'total_comments': random.randint(100, 1000),
+            'total_shares': random.randint(50, 500),
+            'new_subscribers': random.randint(50, 200)
+        }
+    })
+
+# Helper function to serve video files
+@app.route('/video/<path:filename>')
+def serve_video(filename):
+    output_dir = automation.config['directories'].get('output', 'output')
+    return send_from_directory(output_dir, filename)
+
+@app.route('/thumbnails/<path:filename>')
+def serve_thumbnail(filename):
+    """Serve thumbnail images."""
+    thumbnail_dir = automation.config['directories'].get('thumbnails', 'thumbnails')
+    return send_from_directory(thumbnail_dir, filename)
+
 # Run automation job
 @app.route('/run', methods=['POST'])
 def run_automation():
@@ -731,6 +1033,35 @@ def upload_video():
                 'url': f'https://www.youtube.com/shorts/{video_id}'
             })
         else:
+            # Try to upload with YouTube API if authenticated
+            credentials = get_youtube_credentials()
+            if credentials:
+                # Get the uploader module
+                try:
+                    from youtube_uploader import YouTubeUploader
+                    uploader = YouTubeUploader(client_secrets_file=YOUTUBE_CLIENT_SECRETS_FILE)
+                    video_id = uploader.upload_video(
+                        video_file=video_path,
+                        title=title,
+                        description=f"#Shorts video about {title}\n\n#YouTubeShorts",
+                        tags=["shorts", "youtubeshorts"] + [keyword.strip() for keyword in title.split()],
+                        privacy_status="private"  # Start as private for safety
+                    )
+                    
+                    if video_id:
+                        # Set thumbnail if available
+                        if thumbnail_path:
+                            uploader.update_thumbnail(video_id, thumbnail_path)
+                            
+                        return jsonify({
+                            'success': True,
+                            'message': f'Shorts video "{title}" uploaded to YouTube using OAuth',
+                            'video_id': video_id,
+                            'url': f'https://www.youtube.com/shorts/{video_id}'
+                        })
+                except:
+                    pass
+            
             # Fallback to simulation for testing
             fake_id = 'YT_' + ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=11))
             print(f"Upload simulation: Generated fake ID {fake_id}")
@@ -750,17 +1081,54 @@ def upload_video():
             'message': error_msg
         }), 400
 
-# Helper function to serve video files
-@app.route('/video/<path:filename>')
-def serve_video(filename):
-    output_dir = automation.config['directories'].get('output', 'output')
-    return send_from_directory(output_dir, filename)
+# Helper functions for settings
+def mask_api_key(key):
+    """Mask API key for display in settings."""
+    if not key:
+        return ''
+    if len(key) <= 8:
+        return '*' * len(key)
+    return key[:4] + '*' * (len(key) - 8) + key[-4:]
 
-@app.route('/thumbnails/<path:filename>')
-def serve_thumbnail(filename):
-    """Serve thumbnail images."""
-    thumbnail_dir = automation.config['directories'].get('thumbnails', 'thumbnails')
-    return send_from_directory(thumbnail_dir, filename)
+# Helper functions for YouTube API authentication
+def get_youtube_credentials(force_refresh=False):
+    """Get YouTube credentials from the saved token."""
+    credentials = None
+    
+    # Try to load credentials from the saved file
+    if os.path.exists(YOUTUBE_TOKEN_FILE) and not force_refresh:
+        try:
+            with open(YOUTUBE_TOKEN_FILE, 'rb') as token:
+                credentials = pickle.load(token)
+        except Exception as e:
+            print(f"Error loading YouTube credentials: {str(e)}")
+            return None
+    
+    # If credentials are expired and have a refresh token, refresh them
+    if credentials and credentials.expired and credentials.refresh_token:
+        try:
+            credentials.refresh(Request())
+            save_youtube_credentials(credentials)
+        except Exception as e:
+            print(f"Error refreshing YouTube credentials: {str(e)}")
+            return None
+    
+    # If we have valid credentials, return them
+    if credentials and credentials.valid:
+        return credentials
+    
+    # Otherwise, return None to trigger the OAuth flow
+    return None
+
+def save_youtube_credentials(credentials):
+    """Save YouTube credentials to file."""
+    try:
+        with open(YOUTUBE_TOKEN_FILE, 'wb') as token:
+            pickle.dump(credentials, token)
+        return True
+    except Exception as e:
+        print(f"Error saving YouTube credentials: {str(e)}")
+        return False
 
 # Helper functions for video management
 def get_video_list(shorts_only=False):
@@ -974,15 +1342,6 @@ def generate_random_performance_data():
         'views': views,
         'engagement_rates': engagement_rates
     }
-
-# Helper functions for settings
-def mask_api_key(key):
-    """Mask API key for display in settings."""
-    if not key:
-        return ''
-    if len(key) <= 8:
-        return '*' * len(key)
-    return key[:4] + '*' * (len(key) - 8) + key[-4:]
 
 # Date helper functions
 def is_today(date_str):
