@@ -1,419 +1,1482 @@
-
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
-<head>
-    <title>Analytics - TechWealth Daily</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/css/style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body>
+  <head>
+    <title>Analytics - YouTube Shorts Automation</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/css/shorts_style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <style>
+      /* Additional styles for the Analytics page */
+      .chart-container {
+        width: 100%;
+        height: 300px;
+        margin-bottom: 1.5rem;
+      }
+
+      .date-range-picker {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .date-input-group {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .range-presets {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: auto;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .metric-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        box-shadow: var(--shadow);
+      }
+
+      .metric-title {
+        font-size: 0.9rem;
+        color: #777;
+        margin-bottom: 0.5rem;
+      }
+
+      [data-theme="dark"] .metric-title {
+        color: #aaa;
+      }
+
+      .metric-value {
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: var(--primary-color);
+      }
+
+      .metric-change {
+        display: flex;
+        align-items: center;
+        gap: 0.3rem;
+        font-size: 0.8rem;
+      }
+
+      .metric-change.positive {
+        color: var(--success-color);
+      }
+
+      .metric-change.negative {
+        color: var(--danger-color);
+      }
+
+      .top-videos-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 1.5rem;
+      }
+
+      .top-videos-table th,
+      .top-videos-table td {
+        padding: 0.8rem;
+        border-bottom: 1px solid var(--border-color);
+        text-align: left;
+      }
+
+      .top-videos-table th {
+        font-weight: 500;
+        color: #555;
+        background-color: rgba(0, 0, 0, 0.03);
+      }
+
+      [data-theme="dark"] .top-videos-table th {
+        color: #ddd;
+        background-color: rgba(255, 255, 255, 0.05);
+      }
+
+      .top-videos-table tr:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+      }
+
+      [data-theme="dark"] .top-videos-table tr:hover {
+        background-color: rgba(255, 255, 255, 0.02);
+      }
+
+      .video-title-cell {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .video-thumbnail-small {
+        width: 80px;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 4px;
+      }
+
+      .video-title-small {
+        font-weight: 500;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        max-width: 300px;
+      }
+
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .kpi-card {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        box-shadow: var(--shadow);
+        text-align: center;
+      }
+
+      .kpi-icon {
+        font-size: 2rem;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+      }
+
+      .kpi-value {
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin-bottom: 0.3rem;
+      }
+
+      .kpi-label {
+        font-size: 0.9rem;
+        color: #777;
+      }
+
+      [data-theme="dark"] .kpi-label {
+        color: #aaa;
+      }
+
+      .insights-container {
+        margin-top: 2rem;
+      }
+
+      .insight-card {
+        display: flex;
+        gap: 1rem;
+        background-color: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 1.2rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow);
+      }
+
+      .insight-icon {
+        font-size: 1.5rem;
+        color: var(--primary-color);
+        margin-top: 0.2rem;
+      }
+
+      .insight-content {
+        flex-grow: 1;
+      }
+
+      .insight-title {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+      }
+
+      .insight-description {
+        color: #666;
+        line-height: 1.4;
+      }
+
+      [data-theme="dark"] .insight-description {
+        color: #bbb;
+      }
+
+      .tab-container {
+        margin-bottom: 2rem;
+      }
+
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 1.5rem;
+      }
+
+      .tab {
+        padding: 0.8rem 1.5rem;
+        cursor: pointer;
+        position: relative;
+        font-weight: 500;
+      }
+
+      .tab.active {
+        color: var(--primary-color);
+      }
+
+      .tab.active:after {
+        content: "";
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background-color: var(--primary-color);
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      @media (max-width: 768px) {
+        .date-range-picker {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .range-presets {
+          margin-left: 0;
+          margin-top: 0.5rem;
+        }
+
+        .video-title-small {
+          max-width: 200px;
+        }
+      }
+    </style>
+  </head>
+  <body>
     <div class="header">
-        <button id="mobile-menu-btn" class="mobile-menu-btn">
-            <i class="fas fa-bars"></i>
-        </button>
-        <h1><i class="fas fa-robot logo-icon"></i> TechWealth Daily</h1>
-        <div class="nav-links" id="nav-links">
-            <a href="/" class="nav-link">Dashboard</a>
-            <a href="/videos" class="nav-link">Videos</a>
-            <a href="/analytics" class="nav-link active">Analytics</a>
-            <a href="/settings" class="nav-link">Settings</a>
-        </div>
-        <div class="theme-toggle d-flex align-center">
-            <label class="theme-switch">
-                <input type="checkbox" id="theme-toggle">
-                <span class="slider"></span>
-            </label>
-            <span id="theme-label" class="ml-1">Dark Mode</span>
-        </div>
+      <button id="mobile-menu-btn" class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h1>
+        <i class="fab fa-youtube logo-icon"></i> YouTube Shorts Automation
+      </h1>
+      <div class="nav-links" id="nav-links">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/shorts" class="nav-link">My Shorts</a>
+        <a href="/analytics" class="nav-link active">Analytics</a>
+        <a href="/settings" class="nav-link">Settings</a>
+      </div>
+      <div class="theme-toggle d-flex align-center">
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle" />
+          <span class="slider"></span>
+        </label>
+        <span id="theme-label" class="ml-1">Dark Mode</span>
+      </div>
     </div>
 
     <div class="container">
-        <div class="stats-grid mb-3">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-eye"></i></div>
-                <div class="stat-value" id="total-views">0</div>
-                <div class="stat-label">Total Views</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-thumbs-up"></i></div>
-                <div class="stat-value" id="total-likes">0</div>
-                <div class="stat-label">Total Likes</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-comments"></i></div>
-                <div class="stat-value" id="total-comments">0</div>
-                <div class="stat-label">Total Comments</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-users"></i></div>
-                <div class="stat-value" id="total-subscribers">0</div>
-                <div class="stat-label">Subscribers</div>
-            </div>
+      <div class="date-range-picker">
+        <div class="date-input-group">
+          <label for="start-date">From:</label>
+          <input type="date" id="start-date" class="form-control" />
         </div>
-        
-        <div class="dashboard-grid">
-            <div class="card">
-                <h2><i class="fas fa-chart-line section-icon"></i> Views Over Time</h2>
-                <div class="d-flex justify-between align-center mb-3">
-                    <select id="views-timeframe" class="form-control">
-                        <option value="7">Last 7 Days</option>
-                        <option value="30" selected>Last 30 Days</option>
-                        <option value="90">Last 90 Days</option>
-                        <option value="365">Last Year</option>
-                    </select>
-                    <button id="refresh-views" class="btn btn-outline btn-sm">
-                        <i class="fas fa-sync-alt"></i> Refresh
-                    </button>
-                </div>
-                <div style="height: 300px;">
-                    <canvas id="viewsChart"></canvas>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h2><i class="fas fa-chart-bar section-icon"></i> Video Performance</h2>
-                <div class="d-flex justify-between align-center mb-3">
-                    <select id="performance-count" class="form-control">
-                        <option value="5">Top 5 Videos</option>
-                        <option value="10" selected>Top 10 Videos</option>
-                        <option value="all">All Videos</option>
-                    </select>
-                    <div class="d-flex gap-1">
-                        <select id="performance-metric" class="form-control">
-                            <option value="views" selected>Views</option>
-                            <option value="likes">Likes</option>
-                            <option value="comments">Comments</option>
-                            <option value="engagement">Engagement Rate</option>
-                        </select>
-                        <button id="refresh-performance" class="btn btn-outline btn-sm">
-                            <i class="fas fa-sync-alt"></i>
-                        </button>
-                    </div>
-                </div>
-                <div style="height: 300px;">
-                    <canvas id="performanceChart"></canvas>
-                </div>
-            </div>
+
+        <div class="date-input-group">
+          <label for="end-date">To:</label>
+          <input type="date" id="end-date" class="form-control" />
         </div>
-        
-        <div class="card mt-3">
-            <h2><i class="fas fa-fire section-icon"></i> Content Performance Analysis</h2>
-            <div class="tab-container">
-                <div class="tabs">
-                    <div class="tab active" data-tab="by-niche">By Niche</div>
-                    <div class="tab" data-tab="by-length">By Length</div>
-                    <div class="tab" data-tab="by-publish-time">By Publish Time</div>
-                </div>
-                
-                <div class="tab-content active" data-tab="by-niche">
-                    <div class="mt-3" style="height: 350px;">
-                        <canvas id="nichePerformanceChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="tab-content" data-tab="by-length">
-                    <div class="mt-3" style="height: 350px;">
-                        <canvas id="lengthPerformanceChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="tab-content" data-tab="by-publish-time">
-                    <div class="mt-3" style="height: 350px;">
-                        <canvas id="timePerformanceChart"></canvas>
-                    </div>
-                </div>
-            </div>
+
+        <div class="range-presets">
+          <button class="btn btn-sm btn-outline preset-btn" data-days="7">
+            Last 7 days
+          </button>
+          <button class="btn btn-sm btn-outline preset-btn" data-days="30">
+            Last 30 days
+          </button>
+          <button class="btn btn-sm btn-outline preset-btn" data-days="90">
+            Last 90 days
+          </button>
         </div>
+
+        <button id="update-analytics" class="btn btn-primary">
+          <i class="fas fa-sync-alt"></i> Update
+        </button>
+      </div>
+
+      <div class="tab-container">
+        <div class="tabs">
+          <div class="tab active" data-tab="overview">Overview</div>
+          <div class="tab" data-tab="engagement">Engagement</div>
+          <div class="tab" data-tab="audience">Audience</div>
+          <div class="tab" data-tab="performance">Performance Tracking</div>
+        </div>
+
+        <!-- Overview Tab -->
+        <div class="tab-content active" id="overview-tab">
+          <div class="kpi-grid">
+            <div class="kpi-card">
+              <div class="kpi-icon"><i class="fas fa-eye"></i></div>
+              <div class="kpi-value" id="total-views">0</div>
+              <div class="kpi-label">Total Views</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon"><i class="fas fa-thumbs-up"></i></div>
+              <div class="kpi-value" id="total-likes">0</div>
+              <div class="kpi-label">Total Likes</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon"><i class="fas fa-comments"></i></div>
+              <div class="kpi-value" id="total-comments">0</div>
+              <div class="kpi-label">Total Comments</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon"><i class="fas fa-share"></i></div>
+              <div class="kpi-value" id="total-shares">0</div>
+              <div class="kpi-label">Total Shares</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon"><i class="fas fa-users"></i></div>
+              <div class="kpi-value" id="new-subscribers">0</div>
+              <div class="kpi-label">New Subscribers</div>
+            </div>
+
+            <div class="kpi-card">
+              <div class="kpi-icon"><i class="fas fa-clock"></i></div>
+              <div class="kpi-value" id="watch-time">0</div>
+              <div class="kpi-label">Watch Time (hours)</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <i class="fas fa-chart-line section-icon"></i> Views Over Time
+            </h2>
+            <div class="chart-container" id="views-chart">
+              <!-- Chart will be rendered here -->
+              <div class="empty-state">
+                <i class="fas fa-chart-line"></i>
+                <p>Loading chart data...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <i class="fas fa-trophy section-icon"></i> Top Performing Shorts
+            </h2>
+            <div class="table-responsive">
+              <table class="top-videos-table">
+                <thead>
+                  <tr>
+                    <th>Video</th>
+                    <th>Published</th>
+                    <th>Views</th>
+                    <th>Likes</th>
+                    <th>Comments</th>
+                    <th>CTR</th>
+                  </tr>
+                </thead>
+                <tbody id="top-videos-body">
+                  <!-- Table rows will be added dynamically -->
+                  <tr>
+                    <td colspan="6">
+                      <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading top videos data...</p>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="insights-container">
+            <h2><i class="fas fa-lightbulb section-icon"></i> Insights</h2>
+            <div id="insights-container">
+              <!-- Insights will be added dynamically -->
+              <div class="empty-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>Analyzing your data for insights...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Engagement Tab -->
+        <div class="tab-content" id="engagement-tab">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-title">Average Watch Time</div>
+              <div class="metric-value" id="avg-watch-time">0:00</div>
+              <div class="metric-change positive">
+                <i class="fas fa-caret-up"></i> 3.2% vs previous period
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-title">Average Engagement Rate</div>
+              <div class="metric-value" id="engagement-rate">0%</div>
+              <div class="metric-change positive">
+                <i class="fas fa-caret-up"></i> 5.7% vs previous period
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-title">Like to View Ratio</div>
+              <div class="metric-value" id="like-view-ratio">0%</div>
+              <div class="metric-change negative">
+                <i class="fas fa-caret-down"></i> 1.4% vs previous period
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-title">Comment to View Ratio</div>
+              <div class="metric-value" id="comment-view-ratio">0%</div>
+              <div class="metric-change positive">
+                <i class="fas fa-caret-up"></i> 2.1% vs previous period
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <i class="fas fa-chart-bar section-icon"></i> Engagement Metrics
+            </h2>
+            <div class="chart-container" id="engagement-chart">
+              <!-- Chart will be rendered here -->
+              <div class="empty-state">
+                <i class="fas fa-chart-bar"></i>
+                <p>Loading engagement data...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <i class="fas fa-chart-pie section-icon"></i> Engagement Sources
+            </h2>
+            <div class="chart-container" id="sources-chart">
+              <!-- Chart will be rendered here -->
+              <div class="empty-state">
+                <i class="fas fa-chart-pie"></i>
+                <p>Loading source data...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audience Tab -->
+        <div class="tab-content" id="audience-tab">
+          <div class="card">
+            <h2>
+              <i class="fas fa-users section-icon"></i> Audience Demographics
+            </h2>
+
+            <div class="chart-container" id="demographics-chart">
+              <!-- Chart will be rendered here -->
+              <div class="empty-state">
+                <i class="fas fa-users"></i>
+                <p>Loading demographic data...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <i class="fas fa-globe section-icon"></i> Geographic Distribution
+            </h2>
+            <div class="chart-container" id="geography-chart">
+              <!-- Chart will be rendered here -->
+              <div class="empty-state">
+                <i class="fas fa-globe"></i>
+                <p>Loading geography data...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <i class="fas fa-mobile-alt section-icon"></i> Device & Platform
+            </h2>
+            <div class="chart-container" id="device-chart">
+              <!-- Chart will be rendered here -->
+              <div class="empty-state">
+                <i class="fas fa-mobile-alt"></i>
+                <p>Loading device data...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Tab -->
+        <div class="tab-content" id="performance-tab">
+          <div class="card">
+            <h2>
+              <i class="fas fa-tachometer-alt section-icon"></i> Shorts
+              Performance Tracking
+            </h2>
+            <div class="chart-container" id="performance-chart">
+              <!-- Chart will be rendered here -->
+              <div class="empty-state">
+                <i class="fas fa-tachometer-alt"></i>
+                <p>Loading performance data...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <i class="fas fa-tags section-icon"></i> Top Performing Topics
+            </h2>
+            <div class="chart-container" id="topics-chart">
+              <!-- Chart will be rendered here -->
+              <div class="empty-state">
+                <i class="fas fa-tags"></i>
+                <p>Loading topic performance data...</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h2>
+              <i class="fas fa-calendar-alt section-icon"></i> Best Publishing
+              Times
+            </h2>
+            <div class="chart-container" id="publishing-chart">
+              <!-- Chart will be rendered here -->
+              <div class="empty-state">
+                <i class="fas fa-calendar-alt"></i>
+                <p>Analyzing best publishing times...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-    
+
     <div id="toast-container" class="toast-container"></div>
-    
-    <script src="/static/js/main.js"></script>
+
+    <script src="/static/js/shorts_main.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load overall stats
-            fetch('/api/analytics/overview')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('total-views').textContent = data.total_views.toLocaleString();
-                    document.getElementById('total-likes').textContent = data.total_likes.toLocaleString();
-                    document.getElementById('total-comments').textContent = data.total_comments.toLocaleString();
-                    document.getElementById('total-subscribers').textContent = data.subscribers.toLocaleString();
-                });
-            
-            // Views over time chart
-            function loadViewsChart(days = 30) {
-                fetch(`/api/analytics/views?days=${days}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const ctx = document.getElementById('viewsChart').getContext('2d');
-                        
-                        if (window.viewsChart) {
-                            window.viewsChart.destroy();
-                        }
-                        
-                        window.viewsChart = new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: data.dates,
-                                datasets: [{
-                                    label: 'Views',
-                                    data: data.views,
-                                    borderColor: '#0066cc',
-                                    backgroundColor: 'rgba(0, 102, 204, 0.1)',
-                                    tension: 0.3,
-                                    fill: true
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    },
-                                    tooltip: {
-                                        mode: 'index',
-                                        intersect: false
-                                    }
-                                },
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        ticks: {
-                                            precision: 0
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    });
-            }
-            
-            // Video performance chart
-            function loadPerformanceChart(count = 10, metric = 'views') {
-                fetch(`/api/analytics/performance?count=${count}&metric=${metric}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const ctx = document.getElementById('performanceChart').getContext('2d');
-                        
-                        if (window.performanceChart) {
-                            window.performanceChart.destroy();
-                        }
-                        
-                        let color = '#0066cc';
-                        if (metric === 'likes') color = '#28a745';
-                        if (metric === 'comments') color = '#ffc107';
-                        if (metric === 'engagement') color = '#dc3545';
-                        
-                        window.performanceChart = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: data.titles,
-                                datasets: [{
-                                    label: metric.charAt(0).toUpperCase() + metric.slice(1),
-                                    data: data.values,
-                                    backgroundColor: color
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    },
-                                    tooltip: {
-                                        mode: 'index',
-                                        intersect: false
-                                    }
-                                },
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        ticks: {
-                                            precision: metric === 'engagement' ? 2 : 0
-                                        }
-                                    },
-                                    x: {
-                                        ticks: {
-                                            maxRotation: 45,
-                                            minRotation: 45
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    });
-            }
-            
-            // Niche performance chart
-            function loadNicheChart() {
-                fetch('/api/analytics/by-niche')
-                    .then(response => response.json())
-                    .then(data => {
-                        const ctx = document.getElementById('nichePerformanceChart').getContext('2d');
-                        
-                        if (window.nicheChart) {
-                            window.nicheChart.destroy();
-                        }
-                        
-                        window.nicheChart = new Chart(ctx, {
-                            type: 'radar',
-                            data: {
-                                labels: data.niches,
-                                datasets: [{
-                                    label: 'Average Views',
-                                    data: data.avg_views,
-                                    backgroundColor: 'rgba(0, 102, 204, 0.2)',
-                                    borderColor: '#0066cc',
-                                    pointBackgroundColor: '#0066cc'
-                                }, {
-                                    label: 'Engagement Rate (%)',
-                                    data: data.engagement_rates,
-                                    backgroundColor: 'rgba(40, 167, 69, 0.2)',
-                                    borderColor: '#28a745',
-                                    pointBackgroundColor: '#28a745'
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    tooltip: {
-                                        callbacks: {
-                                            label: function(context) {
-                                                const label = context.dataset.label || '';
-                                                const value = context.raw.toFixed(1);
-                                                return `${label}: ${value}`;
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    });
-            }
-            
-            // Video length performance chart
-            function loadLengthChart() {
-                fetch('/api/analytics/by-length')
-                    .then(response => response.json())
-                    .then(data => {
-                        const ctx = document.getElementById('lengthPerformanceChart').getContext('2d');
-                        
-                        if (window.lengthChart) {
-                            window.lengthChart.destroy();
-                        }
-                        
-                        window.lengthChart = new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: data.length_categories,
-                                datasets: [{
-                                    label: 'Average Views',
-                                    data: data.avg_views,
-                                    backgroundColor: '#0066cc'
-                                }, {
-                                    label: 'Average Watch Time (minutes)',
-                                    data: data.avg_watch_time,
-                                    backgroundColor: '#dc3545'
-                                }, {
-                                    label: 'Retention Rate (%)',
-                                    data: data.retention_rates,
-                                    backgroundColor: '#28a745'
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    y: {
-                                        beginAtZero: true
-                                    }
-                                }
-                            }
-                        });
-                    });
-            }
-            
-            // Publish time performance chart
-            function loadTimeChart() {
-                fetch('/api/analytics/by-publish-time')
-                    .then(response => response.json())
-                    .then(data => {
-                        const ctx = document.getElementById('timePerformanceChart').getContext('2d');
-                        
-                        if (window.timeChart) {
-                            window.timeChart.destroy();
-                        }
-                        
-                        window.timeChart = new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: data.time_slots,
-                                datasets: [{
-                                    label: 'Average Views',
-                                    data: data.avg_views,
-                                    borderColor: '#0066cc',
-                                    backgroundColor: 'rgba(0, 102, 204, 0.1)',
-                                    tension: 0.3,
-                                    fill: true
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: {
-                                    y: {
-                                        beginAtZero: true
-                                    }
-                                }
-                            }
-                        });
-                    });
-            }
-            
-            // Initialize all charts
-            loadViewsChart();
-            loadPerformanceChart();
-            loadNicheChart();
-            loadLengthChart();
-            loadTimeChart();
-            
-            // Set up event listeners for chart controls
-            document.getElementById('views-timeframe').addEventListener('change', function() {
-                loadViewsChart(this.value);
-            });
-            
-            document.getElementById('refresh-views').addEventListener('click', function() {
-                const days = document.getElementById('views-timeframe').value;
-                loadViewsChart(days);
-            });
-            
-            document.getElementById('performance-count').addEventListener('change', function() {
-                const count = this.value;
-                const metric = document.getElementById('performance-metric').value;
-                loadPerformanceChart(count, metric);
-            });
-            
-            document.getElementById('performance-metric').addEventListener('change', function() {
-                const metric = this.value;
-                const count = document.getElementById('performance-count').value;
-                loadPerformanceChart(count, metric);
-            });
-            
-            document.getElementById('refresh-performance').addEventListener('click', function() {
-                const count = document.getElementById('performance-count').value;
-                const metric = document.getElementById('performance-metric').value;
-                loadPerformanceChart(count, metric);
-            });
+      document.addEventListener("DOMContentLoaded", function () {
+        // Set default date range (last 30 days)
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() - 30);
+
+        document.getElementById("end-date").valueAsDate = endDate;
+        document.getElementById("start-date").valueAsDate = startDate;
+
+        // Tab switching functionality
+        const tabs = document.querySelectorAll(".tab");
+        const tabContents = document.querySelectorAll(".tab-content");
+
+        tabs.forEach((tab) => {
+          tab.addEventListener("click", function () {
+            const tabId = this.getAttribute("data-tab");
+
+            // Remove active class from all tabs and contents
+            tabs.forEach((t) => t.classList.remove("active"));
+            tabContents.forEach((c) => c.classList.remove("active"));
+
+            // Add active class to clicked tab and corresponding content
+            this.classList.add("active");
+            document.getElementById(`${tabId}-tab`).classList.add("active");
+
+            // Load data for the tab if needed
+            loadTabData(tabId);
+          });
         });
+
+        // Date range preset buttons
+        document.querySelectorAll(".preset-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const days = parseInt(this.getAttribute("data-days"));
+            const endDate = new Date();
+            const startDate = new Date();
+            startDate.setDate(startDate.getDate() - days);
+
+            document.getElementById("end-date").valueAsDate = endDate;
+            document.getElementById("start-date").valueAsDate = startDate;
+
+            // Highlight active preset
+            document
+              .querySelectorAll(".preset-btn")
+              .forEach((b) => b.classList.remove("active"));
+            this.classList.add("active");
+          });
+        });
+
+        // Update button functionality
+        document
+          .getElementById("update-analytics")
+          .addEventListener("click", function () {
+            loadAllData();
+            showToast(
+              "info",
+              "Analytics Updated",
+              "Analytics data has been refreshed for the selected date range."
+            );
+          });
+
+        // Function to load data for a specific tab
+        function loadTabData(tabId) {
+          switch (tabId) {
+            case "overview":
+              loadOverviewData();
+              break;
+            case "engagement":
+              loadEngagementData();
+              break;
+            case "audience":
+              loadAudienceData();
+              break;
+            case "performance":
+              loadPerformanceData();
+              break;
+          }
+        }
+
+        // Function to load all data
+        function loadAllData() {
+          loadOverviewData();
+          loadEngagementData();
+          loadAudienceData();
+          loadPerformanceData();
+        }
+
+        // Load overview data
+        function loadOverviewData() {
+          const startDate = document.getElementById("start-date").value;
+          const endDate = document.getElementById("end-date").value;
+
+          // Simulate API request with loading state
+          document.getElementById("views-chart").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading chart data...</p>
+                    </div>
+                `;
+
+          document.getElementById("top-videos-body").innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <p>Loading top videos data...</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+          document.getElementById("insights-container").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Analyzing your data for insights...</p>
+                    </div>
+                `;
+
+          // Simulate data loading delay
+          setTimeout(() => {
+            // Update KPIs
+            document.getElementById("total-views").textContent = "15,743";
+            document.getElementById("total-likes").textContent = "2,891";
+            document.getElementById("total-comments").textContent = "584";
+            document.getElementById("total-shares").textContent = "326";
+            document.getElementById("new-subscribers").textContent = "147";
+            document.getElementById("watch-time").textContent = "329";
+
+            // Create views chart
+            createViewsChart();
+
+            // Create top videos table
+            createTopVideosTable();
+
+            // Create insights
+            createInsights();
+          }, 1000);
+        }
+
+        // Load engagement data
+        function loadEngagementData() {
+          // Simulate loading states
+          document.getElementById("engagement-chart").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading engagement data...</p>
+                    </div>
+                `;
+
+          document.getElementById("sources-chart").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading source data...</p>
+                    </div>
+                `;
+
+          // Simulate data loading delay
+          setTimeout(() => {
+            // Update metrics
+            document.getElementById("avg-watch-time").textContent = "0:23";
+            document.getElementById("engagement-rate").textContent = "7.8%";
+            document.getElementById("like-view-ratio").textContent = "18.4%";
+            document.getElementById("comment-view-ratio").textContent = "3.7%";
+
+            // Create engagement chart
+            createEngagementChart();
+
+            // Create sources chart
+            createSourcesChart();
+          }, 1000);
+        }
+
+        // Load audience data
+        function loadAudienceData() {
+          // Simulate loading states
+          document.getElementById("demographics-chart").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading demographic data...</p>
+                    </div>
+                `;
+
+          document.getElementById("geography-chart").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading geography data...</p>
+                    </div>
+                `;
+
+          document.getElementById("device-chart").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading device data...</p>
+                    </div>
+                `;
+
+          // Simulate data loading delay
+          setTimeout(() => {
+            // Create demographics chart
+            createDemographicsChart();
+
+            // Create geography chart
+            createGeographyChart();
+
+            // Create device chart
+            createDeviceChart();
+          }, 1000);
+        }
+
+        // Load performance data
+        function loadPerformanceData() {
+          // Simulate loading states
+          document.getElementById("performance-chart").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading performance data...</p>
+                    </div>
+                `;
+
+          document.getElementById("topics-chart").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading topic performance data...</p>
+                    </div>
+                `;
+
+          document.getElementById("publishing-chart").innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Analyzing best publishing times...</p>
+                    </div>
+                `;
+
+          // Simulate data loading delay
+          setTimeout(() => {
+            // Create performance chart
+            createPerformanceChart();
+
+            // Create topics chart
+            createTopicsChart();
+
+            // Create publishing times chart
+            createPublishingChart();
+          }, 1000);
+        }
+
+        // Chart creation functions
+        function createViewsChart() {
+          const ctx = document.createElement("canvas");
+          document.getElementById("views-chart").innerHTML = "";
+          document.getElementById("views-chart").appendChild(ctx);
+
+          new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: [
+                "Mar 1",
+                "Mar 5",
+                "Mar 10",
+                "Mar 15",
+                "Mar 20",
+                "Mar 25",
+                "Mar 30",
+              ],
+              datasets: [
+                {
+                  label: "Views",
+                  data: [1205, 1845, 2398, 3120, 3987, 4532, 5120],
+                  borderColor: "#FF0000",
+                  backgroundColor: "rgba(255, 0, 0, 0.1)",
+                  fill: true,
+                  tension: 0.3,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false,
+                },
+                tooltip: {
+                  mode: "index",
+                  intersect: false,
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    callback: function (value) {
+                      if (value >= 1000) {
+                        return value / 1000 + "k";
+                      }
+                      return value;
+                    },
+                  },
+                },
+              },
+            },
+          });
+        }
+
+        function createEngagementChart() {
+          const ctx = document.createElement("canvas");
+          document.getElementById("engagement-chart").innerHTML = "";
+          document.getElementById("engagement-chart").appendChild(ctx);
+
+          new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: ["Likes", "Comments", "Shares", "Saves", "Subscribes"],
+              datasets: [
+                {
+                  label: "Count",
+                  data: [2891, 584, 326, 198, 147],
+                  backgroundColor: [
+                    "rgba(54, 162, 235, 0.7)",
+                    "rgba(255, 99, 132, 0.7)",
+                    "rgba(75, 192, 192, 0.7)",
+                    "rgba(255, 206, 86, 0.7)",
+                    "rgba(153, 102, 255, 0.7)",
+                  ],
+                  borderColor: [
+                    "rgba(54, 162, 235, 1)",
+                    "rgba(255, 99, 132, 1)",
+                    "rgba(75, 192, 192, 1)",
+                    "rgba(255, 206, 86, 1)",
+                    "rgba(153, 102, 255, 1)",
+                  ],
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: false,
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+        }
+
+        function createSourcesChart() {
+          const ctx = document.createElement("canvas");
+          document.getElementById("sources-chart").innerHTML = "";
+          document.getElementById("sources-chart").appendChild(ctx);
+
+          new Chart(ctx, {
+            type: "doughnut",
+            data: {
+              labels: [
+                "Shorts Feed",
+                "Channel Page",
+                "Search",
+                "External",
+                "Suggested",
+              ],
+              datasets: [
+                {
+                  data: [65, 12, 8, 10, 5],
+                  backgroundColor: [
+                    "rgba(255, 99, 132, 0.7)",
+                    "rgba(54, 162, 235, 0.7)",
+                    "rgba(255, 206, 86, 0.7)",
+                    "rgba(75, 192, 192, 0.7)",
+                    "rgba(153, 102, 255, 0.7)",
+                  ],
+                  borderColor: [
+                    "rgba(255, 99, 132, 1)",
+                    "rgba(54, 162, 235, 1)",
+                    "rgba(255, 206, 86, 1)",
+                    "rgba(75, 192, 192, 1)",
+                    "rgba(153, 102, 255, 1)",
+                  ],
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "right",
+                },
+              },
+            },
+          });
+        }
+
+        function createDemographicsChart() {
+          const ctx = document.createElement("canvas");
+          document.getElementById("demographics-chart").innerHTML = "";
+          document.getElementById("demographics-chart").appendChild(ctx);
+
+          new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: ["18-24", "25-34", "35-44", "45-54", "55-64", "65+"],
+              datasets: [
+                {
+                  label: "Male",
+                  data: [28, 35, 15, 8, 4, 2],
+                  backgroundColor: "rgba(54, 162, 235, 0.7)",
+                  borderColor: "rgba(54, 162, 235, 1)",
+                  borderWidth: 1,
+                },
+                {
+                  label: "Female",
+                  data: [25, 32, 18, 10, 3, 1],
+                  backgroundColor: "rgba(255, 99, 132, 0.7)",
+                  borderColor: "rgba(255, 99, 132, 1)",
+                  borderWidth: 1,
+                },
+                {
+                  label: "Other",
+                  data: [5, 8, 3, 2, 1, 0],
+                  backgroundColor: "rgba(75, 192, 192, 0.7)",
+                  borderColor: "rgba(75, 192, 192, 1)",
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+              },
+              scales: {
+                x: {
+                  stacked: true,
+                },
+                y: {
+                  stacked: true,
+                  beginAtZero: true,
+                  ticks: {
+                    callback: function (value) {
+                      return value + "%";
+                    },
+                  },
+                },
+              },
+            },
+          });
+        }
+
+        function createGeographyChart() {
+          const ctx = document.createElement("canvas");
+          document.getElementById("geography-chart").innerHTML = "";
+          document.getElementById("geography-chart").appendChild(ctx);
+
+          new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: [
+                "United States",
+                "India",
+                "United Kingdom",
+                "Canada",
+                "Australia",
+                "Germany",
+                "Other",
+              ],
+              datasets: [
+                {
+                  label: "Views Percentage",
+                  data: [45, 18, 12, 8, 5, 4, 8],
+                  backgroundColor: "rgba(54, 162, 235, 0.7)",
+                  borderColor: "rgba(54, 162, 235, 1)",
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              indexAxis: "y",
+              plugins: {
+                legend: {
+                  display: false,
+                },
+              },
+              scales: {
+                x: {
+                  beginAtZero: true,
+                  ticks: {
+                    callback: function (value) {
+                      return value + "%";
+                    },
+                  },
+                },
+              },
+            },
+          });
+        }
+
+        function createDeviceChart() {
+          const ctx = document.createElement("canvas");
+          document.getElementById("device-chart").innerHTML = "";
+          document.getElementById("device-chart").appendChild(ctx);
+
+          new Chart(ctx, {
+            type: "doughnut",
+            data: {
+              labels: ["Mobile", "Tablet", "Desktop", "TV", "Other"],
+              datasets: [
+                {
+                  data: [78, 8, 12, 1, 1],
+                  backgroundColor: [
+                    "rgba(255, 99, 132, 0.7)",
+                    "rgba(54, 162, 235, 0.7)",
+                    "rgba(255, 206, 86, 0.7)",
+                    "rgba(75, 192, 192, 0.7)",
+                    "rgba(153, 102, 255, 0.7)",
+                  ],
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "right",
+                },
+              },
+            },
+          });
+        }
+
+        function createPerformanceChart() {
+          const ctx = document.createElement("canvas");
+          document.getElementById("performance-chart").innerHTML = "";
+          document.getElementById("performance-chart").appendChild(ctx);
+
+          new Chart(ctx, {
+            type: "line",
+            data: {
+              labels: [
+                "Video 1",
+                "Video 2",
+                "Video 3",
+                "Video 4",
+                "Video 5",
+                "Video 6",
+                "Video 7",
+                "Video 8",
+              ],
+              datasets: [
+                {
+                  label: "Views",
+                  data: [1205, 2398, 1845, 3120, 4532, 3987, 5120, 4876],
+                  borderColor: "#FF0000",
+                  backgroundColor: "rgba(255, 0, 0, 0.1)",
+                  fill: false,
+                  tension: 0.1,
+                  yAxisID: "y",
+                },
+                {
+                  label: "Engagement Rate",
+                  data: [8.2, 9.5, 7.8, 8.4, 12.3, 9.8, 11.2, 10.5],
+                  borderColor: "#4CAF50",
+                  backgroundColor: "rgba(76, 175, 80, 0.1)",
+                  fill: false,
+                  tension: 0.1,
+                  yAxisID: "y1",
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: {
+                mode: "index",
+                intersect: false,
+              },
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+              },
+              scales: {
+                y: {
+                  type: "linear",
+                  display: true,
+                  position: "left",
+                  title: {
+                    display: true,
+                    text: "Views",
+                  },
+                },
+                y1: {
+                  type: "linear",
+                  display: true,
+                  position: "right",
+                  title: {
+                    display: true,
+                    text: "Engagement Rate (%)",
+                  },
+                  grid: {
+                    drawOnChartArea: false,
+                  },
+                  ticks: {
+                    callback: function (value) {
+                      return value + "%";
+                    },
+                  },
+                },
+              },
+            },
+          });
+        }
+
+        function createTopicsChart() {
+          const ctx = document.createElement("canvas");
+          document.getElementById("topics-chart").innerHTML = "";
+          document.getElementById("topics-chart").appendChild(ctx);
+
+          new Chart(ctx, {
+            type: "horizontalBar",
+            data: {
+              labels: [
+                "Finance Tips",
+                "Crypto Updates",
+                "Tech Hacks",
+                "Investment Strategies",
+                "Trading Advice",
+                "Passive Income",
+                "Personal Finance",
+              ],
+              datasets: [
+                {
+                  label: "Average Views",
+                  data: [4200, 3950, 3450, 3200, 2900, 2700, 2500],
+                  backgroundColor: "rgba(255, 99, 132, 0.7)",
+                  borderColor: "rgba(255, 99, 132, 1)",
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              indexAxis: "y",
+              plugins: {
+                legend: {
+                  display: false,
+                },
+              },
+              scales: {
+                x: {
+                  beginAtZero: true,
+                },
+              },
+            },
+          });
+        }
+
+        function createPublishingChart() {
+          const ctx = document.createElement("canvas");
+          document.getElementById("publishing-chart").innerHTML = "";
+          document.getElementById("publishing-chart").appendChild(ctx);
+
+          new Chart(ctx, {
+            type: "bar",
+            data: {
+              labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+              datasets: [
+                {
+                  label: "Morning (6-11 AM)",
+                  data: [2800, 2900, 3100, 2950, 3200, 3500, 3100],
+                  backgroundColor: "rgba(255, 206, 86, 0.7)",
+                  borderColor: "rgba(255, 206, 86, 1)",
+                  borderWidth: 1,
+                },
+                {
+                  label: "Afternoon (12-5 PM)",
+                  data: [3200, 3150, 3300, 3250, 3500, 3800, 3450],
+                  backgroundColor: "rgba(54, 162, 235, 0.7)",
+                  borderColor: "rgba(54, 162, 235, 1)",
+                  borderWidth: 1,
+                },
+                {
+                  label: "Evening (6-11 PM)",
+                  data: [3900, 3850, 4100, 4000, 4600, 4800, 4200],
+                  backgroundColor: "rgba(255, 99, 132, 0.7)",
+                  borderColor: "rgba(255, 99, 132, 1)",
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: "top",
+                },
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: "Average Views",
+                  },
+                },
+              },
+            },
+          });
+        }
+
+        function createTopVideosTable() {
+          document.getElementById("top-videos-body").innerHTML = `
+                    <tr>
+                        <td>
+                            <div class="video-title-cell">
+                                <img src="/static/images/placeholder_vertical.jpg" alt="Video 1" class="video-thumbnail-small">
+                                <div class="video-title-small">3 Quick Crypto Tips You Need To Know</div>
+                            </div>
+                        </td>
+                        <td>Mar 25, 2025</td>
+                        <td>5,432</td>
+                        <td>987</td>
+                        <td>124</td>
+                        <td>8.7%</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="video-title-cell">
+                                <img src="/static/images/placeholder_vertical.jpg" alt="Video 2" class="video-thumbnail-small">
+                                <div class="video-title-small">This Investment Hack Will Surprise You</div>
+                            </div>
+                        </td>
+                        <td>Mar 20, 2025</td>
+                        <td>4,897</td>
+                        <td>856</td>
+                        <td>105</td>
+                        <td>7.9%</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="video-title-cell">
+                                <img src="/static/images/placeholder_vertical.jpg" alt="Video 3" class="video-thumbnail-small">
+                                <div class="video-title-small">How To Double Your Savings Fast</div>
+                            </div>
+                        </td>
+                        <td>Mar 15, 2025</td>
+                        <td>3,945</td>
+                        <td>712</td>
+                        <td>97</td>
+                        <td>6.8%</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="video-title-cell">
+                                <img src="/static/images/placeholder_vertical.jpg" alt="Video 4" class="video-thumbnail-small">
+                                <div class="video-title-small">Secret Finance Trick Nobody Tells You</div>
+                            </div>
+                        </td>
+                        <td>Mar 10, 2025</td>
+                        <td>3,621</td>
+                        <td>645</td>
+                        <td>85</td>
+                        <td>6.2%</td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <div class="video-title-cell">
+                                <img src="/static/images/placeholder_vertical.jpg" alt="Video 5" class="video-thumbnail-small">
+                                <div class="video-title-small">Try This Money Saving Method Today</div>
+                            </div>
+                        </td>
+                        <td>Mar 5, 2025</td>
+                        <td>2,984</td>
+                        <td>523</td>
+                        <td>72</td>
+                        <td>5.8%</td>
+                    </tr>
+                `;
+        }
+
+        function createInsights() {
+          document.getElementById("insights-container").innerHTML = `
+                    <div class="insight-card">
+                        <div class="insight-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="insight-content">
+                            <div class="insight-title">Strong Growth Trend</div>
+                            <div class="insight-description">Your channel is experiencing consistent growth with a 27% increase in views over the past 30 days. Continue creating content around your top-performing topics to maintain this momentum.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="insight-card">
+                        <div class="insight-icon"><i class="fas fa-lightbulb"></i></div>
+                        <div class="insight-content">
+                            <div class="insight-title">Content Opportunity</div>
+                            <div class="insight-description">Your "Crypto Tips" shorts are generating 35% higher engagement than other topics. Consider creating more content in this category to capitalize on audience interest.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="insight-card">
+                        <div class="insight-icon"><i class="fas fa-clock"></i></div>
+                        <div class="insight-content">
+                            <div class="insight-title">Optimal Posting Times</div>
+                            <div class="insight-description">Shorts posted on Saturdays between 6-9 PM are performing 42% better than other times. Adjust your publishing schedule to maximize reach and engagement.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="insight-card">
+                        <div class="insight-icon"><i class="fas fa-users"></i></div>
+                        <div class="insight-content">
+                            <div class="insight-title">Audience Insight</div>
+                            <div class="insight-description">Your content is resonating strongly with the 25-34 age group. Consider tailoring future content to address the specific financial interests and needs of this demographic.</div>
+                        </div>
+                    </div>
+                `;
+        }
+
+        // Toast notification function (if not already defined)
+        if (typeof showToast !== "function") {
+          function showToast(type, title, message, duration = 5000) {
+            const toastContainer = document.getElementById("toast-container");
+
+            if (!toastContainer) {
+              const container = document.createElement("div");
+              container.id = "toast-container";
+              container.className = "toast-container";
+              document.body.appendChild(container);
+            }
+
+            const toast = document.createElement("div");
+            toast.className = `toast toast-${type}`;
+
+            let iconClass = "fas fa-info-circle";
+            if (type === "success") iconClass = "fas fa-check-circle";
+            if (type === "error") iconClass = "fas fa-exclamation-circle";
+            if (type === "warning") iconClass = "fas fa-exclamation-triangle";
+
+            toast.innerHTML = `
+                        <div class="toast-icon"><i class="${iconClass}"></i></div>
+                        <div class="toast-content">
+                            <div class="toast-title">${title}</div>
+                            <div class="toast-message">${message}</div>
+                        </div>
+                        <div class="toast-close"><i class="fas fa-times"></i></div>
+                    `;
+
+            document.getElementById("toast-container").appendChild(toast);
+
+            // Add click event to close button
+            toast
+              .querySelector(".toast-close")
+              .addEventListener("click", () => {
+                toast.style.animation = "slide-out 0.3s forwards";
+                setTimeout(() => {
+                  toast.remove();
+                }, 300);
+              });
+
+            // Auto remove after duration
+            setTimeout(() => {
+              if (toast.parentNode) {
+                toast.style.animation = "slide-out 0.3s forwards";
+                setTimeout(() => {
+                  if (toast.parentNode) toast.remove();
+                }, 300);
+              }
+            }, duration);
+          }
+        }
+
+        // Load initial data
+        loadOverviewData();
+      });
     </script>
-</body>
+  </body>
 </html>
-    

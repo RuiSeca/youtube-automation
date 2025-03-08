@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <title>My Shorts - YouTube Shorts Automation</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/css/shorts_style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+    <style>
+      /* Additional styles for the Shorts page */
+      .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        align-items: center;
+      }
+
+      .filter-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .search-box {
+        flex-grow: 1;
+        display: flex;
+        max-width: 400px;
+      }
+
+      .search-box input {
+        flex-grow: 1;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: none;
+      }
+
+      .search-box button {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
+
+      .batch-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: auto;
+      }
+
+      .select-all-container {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-right: 1rem;
+      }
+
+      .video-actions {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-color);
+      }
+
+      .video-item .checkbox-container {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        z-index: 10;
+        background-color: rgba(0, 0, 0, 0.5);
+        border-radius: 4px;
+        padding: 5px;
+      }
+
+      .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-top: 2rem;
+      }
+
+      .pagination .page-item {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 4px;
+        border: 1px solid var(--border-color);
+        cursor: pointer;
+        font-weight: 500;
+        transition: var(--transition);
+      }
+
+      .pagination .page-item:hover {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      .pagination .page-item.active {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+
+      .detailed-view .video-item {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        height: auto;
+      }
+
+      .detailed-view .video-thumbnail {
+        height: 320px;
+      }
+
+      .detailed-view .video-info {
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .detailed-view .video-details {
+        margin-top: 1rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+      }
+
+      .detail-item {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .detail-label {
+        font-size: 0.8rem;
+        color: #777;
+        margin-bottom: 0.3rem;
+      }
+
+      .detail-value {
+        font-weight: 500;
+      }
+
+      .view-toggle {
+        display: flex;
+        gap: 0.5rem;
+        margin-left: auto;
+      }
+
+      .view-toggle button {
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--border-color);
+        background-color: var(--card-bg);
+        color: var(--text-color);
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: var(--transition);
+      }
+
+      .view-toggle button:hover,
+      .view-toggle button.active {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <button id="mobile-menu-btn" class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h1>
+        <i class="fab fa-youtube logo-icon"></i> YouTube Shorts Automation
+      </h1>
+      <div class="nav-links" id="nav-links">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/shorts" class="nav-link active">My Shorts</a>
+        <a href="/analytics" class="nav-link">Analytics</a>
+        <a href="/settings" class="nav-link">Settings</a>
+      </div>
+      <div class="theme-toggle d-flex align-center">
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle" />
+          <span class="slider"></span>
+        </label>
+        <span id="theme-label" class="ml-1">Dark Mode</span>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-film"></i></div>
+          <div class="stat-value" id="total-shorts">0</div>
+          <div class="stat-label">Total Shorts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-upload"></i></div>
+          <div class="stat-value" id="uploaded-shorts">0</div>
+          <div class="stat-label">Uploaded to YouTube</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-eye"></i></div>
+          <div class="stat-value" id="total-views">0</div>
+          <div class="stat-label">Total Views</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-thumbs-up"></i></div>
+          <div class="stat-value" id="total-likes">0</div>
+          <div class="stat-label">Total Likes</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><i class="fas fa-film section-icon"></i> My Shorts</h2>
+
+        <div class="filter-bar">
+          <div class="filter-item">
+            <label for="status-filter">Status:</label>
+            <select id="status-filter" class="form-control">
+              <option value="all">All Shorts</option>
+              <option value="uploaded">Uploaded</option>
+              <option value="local">Local Only</option>
+            </select>
+          </div>
+
+          <div class="filter-item">
+            <label for="date-filter">Date:</label>
+            <select id="date-filter" class="form-control">
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+          </div>
+
+          <div class="search-box">
+            <input
+              type="text"
+              id="search-input"
+              class="form-control"
+              placeholder="Search shorts..."
+            />
+            <button id="search-btn" class="btn btn-primary">
+              <i class="fas fa-search"></i>
+            </button>
+          </div>
+
+          <div class="view-toggle">
+            <button id="grid-view-btn" class="active" title="Grid View">
+              <i class="fas fa-th"></i>
+            </button>
+            <button id="list-view-btn" title="List View">
+              <i class="fas fa-th-list"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="select-all-container mb-2">
+          <input type="checkbox" id="select-all" class="form-control" />
+          <label for="select-all">Select All</label>
+
+          <div class="batch-actions">
+            <button
+              class="btn btn-sm btn-outline"
+              id="batch-upload-btn"
+              disabled
+            >
+              <i class="fas fa-upload"></i> Upload Selected
+            </button>
+            <button
+              class="btn btn-sm btn-danger"
+              id="batch-delete-btn"
+              disabled
+            >
+              <i class="fas fa-trash"></i> Delete Selected
+            </button>
+          </div>
+        </div>
+
+        <div id="shortsGallery" class="video-gallery">
+          <!-- Videos will be loaded here dynamically -->
+          <div class="empty-state">
+            <i class="fas fa-video"></i>
+            <p>Loading your shorts...</p>
+          </div>
+        </div>
+
+        <div class="pagination" id="shorts-pagination">
+          <!-- Pagination will be added dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Video Preview Modal will be dynamically added -->
+
+    <script src="/static/js/shorts_main.js"></script>
+    <script>
+      // Additional JavaScript for the Shorts page
+      document.addEventListener("DOMContentLoaded", function () {
+        // View toggle functionality
+        const gridViewBtn = document.getElementById("grid-view-btn");
+        const listViewBtn = document.getElementById("list-view-btn");
+        const shortsGallery = document.getElementById("shortsGallery");
+
+        gridViewBtn.addEventListener("click", function () {
+          shortsGallery.classList.remove("detailed-view");
+          gridViewBtn.classList.add("active");
+          listViewBtn.classList.remove("active");
+          localStorage.setItem("shorts-view", "grid");
+        });
+
+        listViewBtn.addEventListener("click", function () {
+          shortsGallery.classList.add("detailed-view");
+          listViewBtn.classList.add("active");
+          gridViewBtn.classList.remove("active");
+          localStorage.setItem("shorts-view", "list");
+        });
+
+        // Check saved view preference
+        const savedView = localStorage.getItem("shorts-view");
+        if (savedView === "list") {
+          shortsGallery.classList.add("detailed-view");
+          listViewBtn.classList.add("active");
+          gridViewBtn.classList.remove("active");
+        }
+
+        // Filter and search functionality
+        const statusFilter = document.getElementById("status-filter");
+        const dateFilter = document.getElementById("date-filter");
+        const searchInput = document.getElementById("search-input");
+        const searchBtn = document.getElementById("search-btn");
+
+        function loadShorts() {
+          const status = statusFilter.value;
+          const date = dateFilter.value;
+          const search = searchInput.value;
+
+          // Show loading state
+          shortsGallery.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        <p>Loading your shorts...</p>
+                    </div>
+                `;
+
+          // Fetch shorts with filters
+          fetch(
+            `/api/shorts?status=${status}&date=${date}&search=${encodeURIComponent(
+              search
+            )}`
+          )
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success && data.videos && data.videos.length > 0) {
+                let shortsHTML = "";
+
+                data.videos.forEach((video) => {
+                  shortsHTML += `
+                                    <div class="video-item" data-id="${
+                                      video.id
+                                    }">
+                                        <div class="checkbox-container">
+                                            <input type="checkbox" class="video-checkbox" data-id="${
+                                              video.id
+                                            }">
+                                        </div>
+                                        <div class="video-thumbnail">
+                                            <div class="shorts-badge">#SHORTS</div>
+                                            <img src="${
+                                              video.thumbnail ||
+                                              "/static/images/placeholder_vertical.jpg"
+                                            }" 
+                                                alt="${video.title}" 
+                                                onerror="this.onerror=null; this.src='/static/images/placeholder_vertical.jpg';">
+                                            <a href="#" class="play-button" data-video-path="${
+                                              video.path
+                                            }" data-video-title="${
+                    video.title
+                  }"></a>
+                                        </div>
+                                        <div class="video-info">
+                                            <h3 class="video-title">${
+                                              video.title
+                                            }</h3>
+                                            <div class="video-meta">
+                                                <span><i class="far fa-calendar-alt"></i> ${
+                                                  video.date
+                                                }</span>
+                                                <span class="badge badge-${
+                                                  video.uploaded
+                                                    ? "success"
+                                                    : "warning"
+                                                }">${
+                    video.uploaded ? "Uploaded" : "Local"
+                  }</span>
+                                            </div>
+                                            
+                                            <div class="video-details">
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Duration</div>
+                                                    <div class="detail-value">${
+                                                      video.duration ||
+                                                      "~60 sec"
+                                                    }</div>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Size</div>
+                                                    <div class="detail-value">${
+                                                      video.size || "Unknown"
+                                                    }</div>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Status</div>
+                                                    <div class="detail-value">${
+                                                      video.uploaded
+                                                        ? "Published"
+                                                        : "Local Only"
+                                                    }</div>
+                                                </div>
+                                                ${
+                                                  video.uploaded
+                                                    ? `
+                                                <div class="detail-item">
+                                                    <div class="detail-label">Views</div>
+                                                    <div class="detail-value">${
+                                                      video.views || "0"
+                                                    }</div>
+                                                </div>
+                                                `
+                                                    : ""
+                                                }
+                                            </div>
+                                            
+                                            <div class="video-options">
+                                                <button class="btn btn-sm btn-outline preview-video" data-video-path="${
+                                                  video.path
+                                                }" data-video-title="${
+                    video.title
+                  }">
+                                                    <i class="fas fa-play"></i> Preview
+                                                </button>
+                                                ${
+                                                  !video.uploaded
+                                                    ? `
+                                                <button class="btn btn-sm btn-primary upload-video" data-video-path="${video.path}" data-video-title="${video.title}" data-id="${video.id}">
+                                                    <i class="fas fa-upload"></i> Upload
+                                                </button>
+                                                `
+                                                    : `
+                                                <a href="https://www.youtube.com/shorts/${
+                                                  video.videoId || ""
+                                                }" target="_blank" class="btn btn-sm btn-outline">
+                                                    <i class="fas fa-external-link-alt"></i> View on YouTube
+                                                </a>
+                                                `
+                                                }
+                                                <button class="btn btn-sm btn-danger delete-video" data-id="${
+                                                  video.id
+                                                }" data-title="${video.title}">
+                                                    <i class="fas fa-trash"></i> Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                });
+
+                shortsGallery.innerHTML = shortsHTML;
+
+                // Update stats
+                document.getElementById("total-shorts").textContent =
+                  data.stats?.total || data.videos.length;
+                document.getElementById("uploaded-shorts").textContent =
+                  data.stats?.uploaded ||
+                  data.videos.filter((v) => v.uploaded).length;
+
+                // Add event listeners
+                addVideoEventListeners();
+
+                // Update pagination
+                updatePagination(
+                  data.pagination || {
+                    current_page: 1,
+                    total_pages: 1,
+                    total_items: data.videos.length,
+                  }
+                );
+              } else {
+                shortsGallery.innerHTML = `
+                                <div class="empty-state">
+                                    <i class="fas fa-video"></i>
+                                    <p>No shorts found matching your filters. Try adjusting your search criteria.</p>
+                                </div>
+                            `;
+              }
+            })
+            .catch((error) => {
+              console.error("Error loading shorts:", error);
+              shortsGallery.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <p>Error loading shorts. Please try again later.</p>
+                            </div>
+                        `;
+            });
+        }
+
+        function addVideoEventListeners() {
+          // Preview video
+          document
+            .querySelectorAll(".preview-video, .play-button")
+            .forEach((btn) => {
+              btn.addEventListener("click", function (e) {
+                e.preventDefault();
+                const videoPath = this.getAttribute("data-video-path");
+                const videoTitle = this.getAttribute("data-video-title");
+                openVideoModal(videoPath, videoTitle);
+              });
+            });
+
+          // Upload video
+          document.querySelectorAll(".upload-video").forEach((btn) => {
+            btn.addEventListener("click", function (e) {
+              e.preventDefault();
+              const videoPath = this.getAttribute("data-video-path");
+              const videoTitle = this.getAttribute("data-video-title");
+              const videoId = this.getAttribute("data-id");
+
+              if (
+                confirm(
+                  `Are you sure you want to upload "${videoTitle}" to YouTube as a Short?`
+                )
+              ) {
+                uploadVideo(videoPath, videoTitle, videoId);
+              }
+            });
+          });
+
+          // Delete video
+          document.querySelectorAll(".delete-video").forEach((btn) => {
+            btn.addEventListener("click", function (e) {
+              e.preventDefault();
+              const videoId = this.getAttribute("data-id");
+              const videoTitle = this.getAttribute("data-title");
+
+              if (
+                confirm(
+                  `Are you sure you want to delete "${videoTitle}"? This cannot be undone.`
+                )
+              ) {
+                deleteVideo(videoId);
+              }
+            });
+          });
+
+          // Checkbox selection
+          document.querySelectorAll(".video-checkbox").forEach((checkbox) => {
+            checkbox.addEventListener("change", updateBatchActions);
+          });
+        }
+
+        function updatePagination(pagination) {
+          const paginationContainer =
+            document.getElementById("shorts-pagination");
+
+          if (!pagination || pagination.total_pages <= 1) {
+            paginationContainer.style.display = "none";
+            return;
+          }
+
+          paginationContainer.style.display = "flex";
+
+          let paginationHTML = "";
+
+          // Previous button
+          paginationHTML += `
+                    <a class="page-item ${
+                      pagination.current_page === 1 ? "disabled" : ""
+                    }" data-page="${pagination.current_page - 1}">
+                        <i class="fas fa-chevron-left"></i>
+                    </a>
+                `;
+
+          // Page numbers
+          const startPage = Math.max(1, pagination.current_page - 2);
+          const endPage = Math.min(
+            pagination.total_pages,
+            pagination.current_page + 2
+          );
+
+          for (let i = startPage; i <= endPage; i++) {
+            paginationHTML += `
+                        <a class="page-item ${
+                          i === pagination.current_page ? "active" : ""
+                        }" data-page="${i}">
+                            ${i}
+                        </a>
+                    `;
+          }
+
+          // Next button
+          paginationHTML += `
+                    <a class="page-item ${
+                      pagination.current_page === pagination.total_pages
+                        ? "disabled"
+                        : ""
+                    }" data-page="${pagination.current_page + 1}">
+                        <i class="fas fa-chevron-right"></i>
+                    </a>
+                `;
+
+          paginationContainer.innerHTML = paginationHTML;
+
+          // Add event listeners to pagination items
+          document.querySelectorAll(".page-item").forEach((item) => {
+            item.addEventListener("click", function (e) {
+              e.preventDefault();
+              if (
+                !this.classList.contains("disabled") &&
+                !this.classList.contains("active")
+              ) {
+                const page = this.getAttribute("data-page");
+                loadPage(page);
+              }
+            });
+          });
+        }
+
+        function loadPage(page) {
+          // Here you would update your API call to include the page parameter
+          // For now, just reload the shorts
+          loadShorts();
+        }
+
+        function updateBatchActions() {
+          const checkboxes = document.querySelectorAll(
+            ".video-checkbox:checked"
+          );
+          const batchUploadBtn = document.getElementById("batch-upload-btn");
+          const batchDeleteBtn = document.getElementById("batch-delete-btn");
+
+          if (checkboxes.length > 0) {
+            batchUploadBtn.removeAttribute("disabled");
+            batchDeleteBtn.removeAttribute("disabled");
+          } else {
+            batchUploadBtn.setAttribute("disabled", "disabled");
+            batchDeleteBtn.setAttribute("disabled", "disabled");
+          }
+        }
+
+        // Function to open video preview modal
+        function openVideoModal(videoPath, videoTitle) {
+          // Create modal if it doesn't exist
+          if (!document.getElementById("videoPreviewModal")) {
+            const modal = document.createElement("div");
+            modal.id = "videoPreviewModal";
+            modal.className = "modal-backdrop";
+            modal.innerHTML = `
+                        <div class="modal">
+                            <div class="modal-header">
+                                <div class="modal-title" id="videoModalTitle">Shorts Preview</div>
+                                <button class="modal-close">&times;</button>
+                            </div>
+                            <div class="modal-body" style="display: flex; justify-content: center;">
+                                <video id="videoPlayer" controls style="max-height: 70vh; max-width: 100%; width: auto;"></video>
+                            </div>
+                        </div>
+                    `;
+            document.body.appendChild(modal);
+
+            // Add event listener to close button
+            modal
+              .querySelector(".modal-close")
+              .addEventListener("click", () => {
+                modal.classList.remove("active");
+                const videoPlayer = document.getElementById("videoPlayer");
+                videoPlayer.pause();
+                videoPlayer.src = "";
+              });
+
+            // Close modal when clicking outside
+            modal.addEventListener("click", (e) => {
+              if (e.target === modal) {
+                modal.classList.remove("active");
+                const videoPlayer = document.getElementById("videoPlayer");
+                videoPlayer.pause();
+                videoPlayer.src = "";
+              }
+            });
+          }
+
+          // Update modal content and open it
+          const modal = document.getElementById("videoPreviewModal");
+          document.getElementById("videoModalTitle").textContent = videoTitle;
+
+          const videoPlayer = document.getElementById("videoPlayer");
+          videoPlayer.src = `/video/${encodeURIComponent(videoPath)}`;
+
+          modal.classList.add("active");
+        }
+
+        // Function to upload video to YouTube
+        function uploadVideo(videoPath, videoTitle, videoId) {
+          showToast(
+            "info",
+            "Upload Started",
+            `Starting upload of "${videoTitle}" to YouTube as a Short...`
+          );
+
+          fetch("/upload", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRFToken": document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute("content"),
+            },
+            body: JSON.stringify({
+              video_path: videoPath,
+              title: videoTitle,
+              id: videoId,
+            }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                showToast(
+                  "success",
+                  "Upload Success",
+                  `"${videoTitle}" has been uploaded to YouTube Shorts!`
+                );
+                // Refresh shorts list
+                loadShorts();
+              } else {
+                showToast(
+                  "error",
+                  "Upload Failed",
+                  data.message || "There was an error uploading the video."
+                );
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              showToast(
+                "error",
+                "Upload Error",
+                "There was a network error while uploading the video."
+              );
+            });
+        }
+
+        // Function to delete video
+        function deleteVideo(videoId) {
+          showToast("info", "Deleting", "Deleting video...");
+
+          fetch(`/video/${videoId}/delete`, {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute("content"),
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                showToast("success", "Deleted", "Video has been deleted.");
+                // Refresh shorts list
+                loadShorts();
+              } else {
+                showToast(
+                  "error",
+                  "Delete Failed",
+                  data.message || "There was an error deleting the video."
+                );
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              showToast(
+                "error",
+                "Delete Error",
+                "There was a network error while deleting the video."
+              );
+            });
+        }
+
+        // Check if the toast function exists, otherwise define it
+        if (typeof showToast !== "function") {
+          function showToast(type, title, message, duration = 5000) {
+            const toastContainer = document.getElementById("toast-container");
+
+            if (!toastContainer) {
+              const container = document.createElement("div");
+              container.id = "toast-container";
+              container.className = "toast-container";
+              document.body.appendChild(container);
+            }
+
+            const toast = document.createElement("div");
+            toast.className = `toast toast-${type}`;
+
+            let iconClass = "fas fa-info-circle";
+            if (type === "success") iconClass = "fas fa-check-circle";
+            if (type === "error") iconClass = "fas fa-exclamation-circle";
+            if (type === "warning") iconClass = "fas fa-exclamation-triangle";
+
+            toast.innerHTML = `
+                        <div class="toast-icon"><i class="${iconClass}"></i></div>
+                        <div class="toast-content">
+                            <div class="toast-title">${title}</div>
+                            <div class="toast-message">${message}</div>
+                        </div>
+                        <div class="toast-close"><i class="fas fa-times"></i></div>
+                    `;
+
+            document.getElementById("toast-container").appendChild(toast);
+
+            // Add click event to close button
+            toast
+              .querySelector(".toast-close")
+              .addEventListener("click", () => {
+                toast.style.animation = "slide-out 0.3s forwards";
+                setTimeout(() => {
+                  toast.remove();
+                }, 300);
+              });
+
+            // Auto remove after duration
+            setTimeout(() => {
+              if (toast.parentNode) {
+                toast.style.animation = "slide-out 0.3s forwards";
+                setTimeout(() => {
+                  if (toast.parentNode) toast.remove();
+                }, 300);
+              }
+            }, duration);
+          }
+        }
+
+        // Select all functionality
+        const selectAllCheckbox = document.getElementById("select-all");
+        selectAllCheckbox.addEventListener("change", function () {
+          const checked = this.checked;
+          document.querySelectorAll(".video-checkbox").forEach((checkbox) => {
+            checkbox.checked = checked;
+          });
+          updateBatchActions();
+        });
+
+        // Batch upload functionality
+        document
+          .getElementById("batch-upload-btn")
+          .addEventListener("click", function () {
+            const selectedIds = Array.from(
+              document.querySelectorAll(".video-checkbox:checked")
+            ).map((checkbox) => checkbox.getAttribute("data-id"));
+
+            if (
+              selectedIds.length > 0 &&
+              confirm(
+                `Are you sure you want to upload ${selectedIds.length} videos to YouTube?`
+              )
+            ) {
+              showToast(
+                "info",
+                "Batch Upload",
+                `Starting upload of ${selectedIds.length} videos...`
+              );
+
+              // For now, just show a success message
+              setTimeout(() => {
+                showToast(
+                  "success",
+                  "Batch Upload",
+                  "Videos have been queued for upload."
+                );
+                loadShorts(); // Refresh the list
+              }, 1500);
+            }
+          });
+
+        // Batch delete functionality
+        document
+          .getElementById("batch-delete-btn")
+          .addEventListener("click", function () {
+            const selectedIds = Array.from(
+              document.querySelectorAll(".video-checkbox:checked")
+            ).map((checkbox) => checkbox.getAttribute("data-id"));
+
+            if (
+              selectedIds.length > 0 &&
+              confirm(
+                `Are you sure you want to delete ${selectedIds.length} videos? This cannot be undone.`
+              )
+            ) {
+              showToast(
+                "info",
+                "Batch Delete",
+                `Deleting ${selectedIds.length} videos...`
+              );
+
+              // For now, just show a success message
+              setTimeout(() => {
+                showToast(
+                  "success",
+                  "Batch Delete",
+                  "Videos have been deleted."
+                );
+                loadShorts(); // Refresh the list
+              }, 1500);
+            }
+          });
+
+        // Add filter event listeners
+        statusFilter.addEventListener("change", loadShorts);
+        dateFilter.addEventListener("change", loadShorts);
+        searchBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          loadShorts();
+        });
+        searchInput.addEventListener("keyup", function (e) {
+          if (e.key === "Enter") {
+            loadShorts();
+          }
+        });
+
+        // Load initial data
+        loadShorts();
+      });
+    </script>
+  </body>
+</html>

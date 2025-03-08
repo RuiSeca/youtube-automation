@@ -1,151 +1,200 @@
-
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
-<head>
+  <head>
     <title>YouTube Shorts Automation</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/css/shorts_style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-</head>
-<body>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/css/shorts_style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <meta name="csrf-token" content="{{ csrf_token() }}" />
+  </head>
+  <body>
     <div class="header">
-        <button id="mobile-menu-btn" class="mobile-menu-btn">
-            <i class="fas fa-bars"></i>
-        </button>
-        <h1><i class="fab fa-youtube logo-icon"></i> YouTube Shorts Automation</h1>
-        <div class="nav-links" id="nav-links">
-            <a href="/" class="nav-link active">Dashboard</a>
-            <a href="/shorts" class="nav-link">My Shorts</a>
-            <a href="/analytics" class="nav-link">Analytics</a>
-            <a href="/settings" class="nav-link">Settings</a>
-        </div>
-        <div class="theme-toggle d-flex align-center">
-            <label class="theme-switch">
-                <input type="checkbox" id="theme-toggle">
-                <span class="slider"></span>
-            </label>
-            <span id="theme-label" class="ml-1">Dark Mode</span>
-        </div>
+      <button id="mobile-menu-btn" class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h1>
+        <i class="fab fa-youtube logo-icon"></i> YouTube Shorts Automation
+      </h1>
+      <div class="nav-links" id="nav-links">
+        <a href="/" class="nav-link active">Dashboard</a>
+        <a href="/shorts" class="nav-link">My Shorts</a>
+        <a href="/analytics" class="nav-link">Analytics</a>
+        <a href="/settings" class="nav-link">Settings</a>
+      </div>
+      <div class="theme-toggle d-flex align-center">
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle" />
+          <span class="slider"></span>
+        </label>
+        <span id="theme-label" class="ml-1">Dark Mode</span>
+      </div>
     </div>
 
     <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        <div class="alert-icon">
-                            <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
-                        </div>
-                        <div class="alert-content">
-                            <div class="alert-message">{{ message }}</div>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-film"></i></div>
-                <div class="stat-value" id="total-shorts">0</div>
-                <div class="stat-label">Total Shorts</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
-                <div class="stat-value" id="shorts-today">0</div>
-                <div class="stat-label">Shorts Today</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-tasks"></i></div>
-                <div class="stat-value" id="active-jobs">0</div>
-                <div class="stat-label">Active Jobs</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                <div class="stat-value" id="success-rate">0%</div>
-                <div class="stat-label">Success Rate</div>
-            </div>
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">
+        <div class="alert-icon">
+          <i
+            class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"
+          ></i>
         </div>
-
-        <div class="dashboard-grid">
-            <div class="card">
-                <h2><i class="fas fa-play-circle section-icon"></i> Create New Shorts</h2>
-                <form id="automationForm" action="/run" method="post">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="form-group">
-                        <label for="niche">Content Topic:</label>
-                        <input type="text" id="niche" name="niche" class="form-control" required placeholder="e.g., fintech tips, cryptocurrency, tech hacks">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Trending Topics:</label>
-                        <div class="d-flex flex-wrap gap-1 mb-2">
-                            <button type="button" class="btn btn-sm btn-outline trending-topic">fintech tips</button>
-                            <button type="button" class="btn btn-sm btn-outline trending-topic">crypto investing</button>
-                            <button type="button" class="btn btn-sm btn-outline trending-topic">tech tricks</button>
-                            <button type="button" class="btn btn-sm btn-outline trending-topic">productivity hacks</button>
-                            <button type="button" class="btn btn-sm btn-outline trending-topic">passive income</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="count">Number of Shorts:</label>
-                        <select id="count" name="count" class="form-control">
-                            <option value="1">1 Short</option>
-                            <option value="2">2 Shorts</option>
-                            <option value="3" selected>3 Shorts</option>
-                            <option value="5">5 Shorts</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="style">Content Style:</label>
-                        <select id="style" name="style" class="form-control">
-                            <option value="informative">Informative</option>
-                            <option value="entertaining" selected>Entertaining</option>
-                            <option value="educational">Educational</option>
-                            <option value="casual">Casual/Conversational</option>
-                            <option value="surprising">Surprising/Shocking</option>
-                        </select>
-                    </div>
-                    
-                    <div class="checkbox-group mt-2">
-                        <input type="checkbox" id="auto-upload" name="auto_upload" checked>
-                        <label for="auto-upload">Automatically upload to YouTube</label>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary mt-2"><i class="fas fa-cogs"></i> Start Shorts Generation</button>
-                </form>
-            </div>
-            
-            <div class="card">
-                <h2><i class="fas fa-tasks section-icon"></i> Active Jobs</h2>
-                <div id="jobsList">
-                    <div class="empty-state">
-                        <i class="fas fa-tasks"></i>
-                        <p>No active jobs. Start a new Shorts automation job to see status here.</p>
-                    </div>
-                </div>
-            </div>
+        <div class="alert-content">
+          <div class="alert-message">{{ message }}</div>
         </div>
-        
+      </div>
+      {% endfor %} {% endif %} {% endwith %}
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-film"></i></div>
+          <div class="stat-value" id="total-shorts">0</div>
+          <div class="stat-label">Total Shorts</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+          <div class="stat-value" id="shorts-today">0</div>
+          <div class="stat-label">Shorts Today</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+          <div class="stat-value" id="active-jobs">0</div>
+          <div class="stat-label">Active Jobs</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+          <div class="stat-value" id="success-rate">0%</div>
+          <div class="stat-label">Success Rate</div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
         <div class="card">
-            <h2><i class="fas fa-film section-icon"></i> Recent Shorts</h2>
-            <div id="shortsGallery" class="video-gallery">
-                <div class="empty-state">
-                    <i class="fas fa-video"></i>
-                    <p>No Shorts generated yet. Start creating content to see your Shorts here.</p>
-                </div>
+          <h2>
+            <i class="fas fa-play-circle section-icon"></i> Create New Shorts
+          </h2>
+          <form id="automationForm" action="/run" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="form-group">
+              <label for="niche">Content Topic:</label>
+              <input
+                type="text"
+                id="niche"
+                name="niche"
+                class="form-control"
+                required
+                placeholder="e.g., fintech tips, cryptocurrency, tech hacks"
+              />
             </div>
+
+            <div class="form-group">
+              <label>Trending Topics:</label>
+              <div class="d-flex flex-wrap gap-1 mb-2">
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline trending-topic"
+                >
+                  fintech tips
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline trending-topic"
+                >
+                  crypto investing
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline trending-topic"
+                >
+                  tech tricks
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline trending-topic"
+                >
+                  productivity hacks
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline trending-topic"
+                >
+                  passive income
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="count">Number of Shorts:</label>
+              <select id="count" name="count" class="form-control">
+                <option value="1">1 Short</option>
+                <option value="2">2 Shorts</option>
+                <option value="3" selected>3 Shorts</option>
+                <option value="5">5 Shorts</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="style">Content Style:</label>
+              <select id="style" name="style" class="form-control">
+                <option value="informative">Informative</option>
+                <option value="entertaining" selected>Entertaining</option>
+                <option value="educational">Educational</option>
+                <option value="casual">Casual/Conversational</option>
+                <option value="surprising">Surprising/Shocking</option>
+              </select>
+            </div>
+
+            <div class="checkbox-group mt-2">
+              <input
+                type="checkbox"
+                id="auto-upload"
+                name="auto_upload"
+                checked
+              />
+              <label for="auto-upload">Automatically upload to YouTube</label>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-2">
+              <i class="fas fa-cogs"></i> Start Shorts Generation
+            </button>
+          </form>
         </div>
+
+        <div class="card">
+          <h2><i class="fas fa-tasks section-icon"></i> Active Jobs</h2>
+          <div id="jobsList">
+            <div class="empty-state">
+              <i class="fas fa-tasks"></i>
+              <p>
+                No active jobs. Start a new Shorts automation job to see status
+                here.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><i class="fas fa-film section-icon"></i> Recent Shorts</h2>
+        <div id="shortsGallery" class="video-gallery">
+          <div class="empty-state">
+            <i class="fas fa-video"></i>
+            <p>
+              No Shorts generated yet. Start creating content to see your Shorts
+              here.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
-    
+
     <div id="toast-container" class="toast-container"></div>
-    
+
     <script src="/static/js/shorts_main.js"></script>
-</body>
+  </body>
 </html>
-    

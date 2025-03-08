@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <title>Settings - YouTube Shorts Automation</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/shorts_style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <style>
+        /* Additional styles for the Settings page */
+        .settings-card {
+            margin-bottom: 2rem;
+        }
+        
+        .settings-heading {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            gap: 0.5rem;
+        }
+        
+        .settings-heading h3 {
+            margin: 0;
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        
+        .form-divider {
+            margin: 1.5rem 0;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .api-key-input {
+            font-family: monospace;
+            letter-spacing: 1px;
+        }
+        
+        .api-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .api-status.active {
+            background-color: var(--success-color);
+        }
+        
+        .api-status.inactive {
+            background-color: var(--danger-color);
+        }
+        
+        .toggle-password {
+            cursor: pointer;
+            color: #777;
+        }
+        
+        [data-theme="dark"] .toggle-password {
+            color: #aaa;
+        }
+        
+        .toggle-password:hover {
+            color: var(--primary-color);
+        }
+        
+        .connect-youtube {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .connect-youtube .connect-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+        }
+        
+        .connect-youtube .connect-content {
+            flex-grow: 1;
+        }
+        
+        .connect-youtube .connect-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .connect-youtube .connect-description {
+            color: #777;
+            margin-bottom: 1rem;
+        }
+        
+        [data-theme="dark"] .connect-youtube .connect-description {
+            color: #aaa;
+        }
+        
+        .youtube-channel {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background-color: rgba(0, 0, 0, 0.03);
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        
+        [data-theme="dark"] .youtube-channel {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        .channel-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        
+        .channel-info {
+            flex-grow: 1;
+        }
+        
+        .channel-name {
+            font-weight: 600;
+            margin-bottom: 0.2rem;
+        }
+        
+        .channel-stats {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.9rem;
+            color: #777;
+        }
+        
+        [data-theme="dark"] .channel-stats {
+            color: #aaa;
+        }
+        
+        .channel-stat {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        
+        .field-with-icon {
+            position: relative;
+        }
+        
+        .field-with-icon input {
+            padding-right: 2.5rem;
+        }
+        
+        .field-with-icon .field-icon {
+            position: absolute;
+            top: 50%;
+            right: 0.75rem;
+            transform: translateY(-50%);
+            cursor: pointer;
+        }
+        
+        .settings-section-title {
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .tags-input {
+            margin-bottom: 0.5rem;
+        }
+        
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background-color: rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.9rem;
+        }
+        
+        [data-theme="dark"] .tag {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .tag .tag-remove {
+            cursor: pointer;
+            color: #777;
+        }
+        
+        .tag .tag-remove:hover {
+            color: var(--danger-color);
+        }
+        
+        .setting-help {
+            font-size: 0.9rem;
+            color: #777;
+            margin-top: 0.3rem;
+        }
+        
+        [data-theme="dark"] .setting-help {
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <button id="mobile-menu-btn" class="mobile-menu-btn">
+            <i class="fas fa-bars"></i>
+        </button>
+        <h1><i class="fab fa-youtube logo-icon"></i> YouTube Shorts Automation</h1>
+        <div class="nav-links" id="nav-links">
+            <a href="/" class="nav-link">Dashboard</a>
+            <a href="/shorts" class="nav-link">My Shorts</a>
+            <a href="/analytics" class="nav-link">Analytics</a>
+            <a href="/settings" class="nav-link active">Settings</a>
+        </div>
+        <div class="theme-toggle d-flex align-center">
+            <label class="theme-switch">
+                <input type="checkbox" id="theme-toggle">
+                <span class="slider"></span>
+            </label>
+            <span id="theme-label" class="ml-1">Dark Mode</span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2><i class="fas fa-cogs section-icon"></i> Settings</h2>
+            
+            <div class="tab-container">
+                <div class="tabs">
+                    <div class="tab active" data-tab="api-keys">API Keys</div>
+                    <div class="tab" data-tab="shorts-settings">Shorts Settings</div>
+                    <div class="tab" data-tab="youtube">YouTube</div>
+                    <div class="tab" data-tab="advanced">Advanced</div>
+                </div>
+                
+                <!-- API Keys Tab -->
+                <div class="tab-content active" id="api-keys-tab">
+                    <div class="settings-card">
+                        <div class="settings-heading">
+                            <i class="fas fa-key"></i>
+                            <h3>API Key Configuration</h3>
+                        </div>
+                        
+                        <p>Configure your API keys to enable all features of the YouTube Shorts Automation system. These keys are used to interact with various services for content generation, voice narration, stock footage, and YouTube uploads.</p>
+                        
+                        <form id="api-keys-form" action="/settings/api-keys" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="form-group">
+                                <label for="openai_api_key">
+                                    <span class="api-status {{ 'active' if api_keys.openai else 'inactive' }}"></span>
+                                    OpenAI API Key:
+                                </label>
+                                <div class="field-with-icon">
+                                    <input type="password" id="openai_api_key" name="openai_api_key" class="form-control api-key-input" value="{{ api_keys.openai }}" placeholder="Enter your OpenAI API key">
+                                    <span class="field-icon toggle-password" data-target="openai_api_key">
+                                        <i class="fas fa-eye"></i>
+                                    </span>
+                                </div>
+                                <div class="setting-help">Used for content ideas, script generation, and thumbnail descriptions</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="elevenlabs_api_key">
+                                    <span class="api-status {{ 'active' if api_keys.elevenlabs else 'inactive' }}"></span>
+                                    ElevenLabs API Key:
+                                </label>
+                                <div class="field-with-icon">
+                                    <input type="password" id="elevenlabs_api_key" name="elevenlabs_api_key" class="form-control api-key-input" value="{{ api_keys.elevenlabs }}" placeholder="Enter your ElevenLabs API key">
+                                    <span class="field-icon toggle-password" data-target="elevenlabs_api_key">
+                                        <i class="fas fa-eye"></i>
+                                    </span>
+                                </div>
+                                <div class="setting-help">Used for generating high-quality voice narration</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="pexels_api_key">
+                                    <span class="api-status {{ 'active' if api_keys.pexels else 'inactive' }}"></span>
+                                    Pexels API Key:
+                                </label>
+                                <div class="field-with-icon">
+                                    <input type="password" id="pexels_api_key" name="pexels_api_key" class="form-control api-key-input" value="{{ api_keys.pexels }}" placeholder="Enter your Pexels API key">
+                                    <span class="field-icon toggle-password" data-target="pexels_api_key">
+                                        <i class="fas fa-eye"></i>
+                                    </span>
+                                </div>
+                                <div class="setting-help">Used for searching and downloading stock footage</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="youtube_api_key">
+                                    <span class="api-status {{ 'active' if api_keys.youtube else 'inactive' }}"></span>
+                                    YouTube API Key:
+                                </label>
+                                <div class="field-with-icon">
+                                    <input type="password" id="youtube_api_key" name="youtube_api_key" class="form-control api-key-input" value="{{ api_keys.youtube }}" placeholder="Enter your YouTube API key">
+                                    <span class="field-icon toggle-password" data-target="youtube_api_key">
+                                        <i class="fas fa-eye"></i>
+                                    </span>
+                                </div>
+                                <div class="setting-help">Used for YouTube uploads and analytics (requires YouTube Data API v3)</div>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save API Keys
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Shorts Settings Tab -->
+                <div class="tab-content" id="shorts-settings-tab">
+                    <div class="settings-card">
+                        <div class="settings-heading">
+                            <i class="fas fa-film"></i>
+                            <h3>Shorts Content Settings</h3>
+                        </div>
+                        
+                        <p>Configure your YouTube Shorts generation settings. These settings affect how your Shorts are created, their style, and format.</p>
+                        
+                        <form id="shorts-settings-form" action="/settings/shorts" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="form-group">
+                                <label for="shorts_duration">Maximum Shorts Duration:</label>
+                                <select id="shorts_duration" name="shorts_duration" class="form-control">
+                                    <option value="15" {{ 'selected' if shorts_settings.max_duration == 15 else '' }}>15 seconds</option>
+                                    <option value="30" {{ 'selected' if shorts_settings.max_duration == 30 else '' }}>30 seconds</option>
+                                    <option value="45" {{ 'selected' if shorts_settings.max_duration == 45 else '' }}>45 seconds</option>
+                                    <option value="60" {{ 'selected' if shorts_settings.max_duration == 60 else '' }}>60 seconds (maximum)</option>
+                                </select>
+                                <div class="setting-help">YouTube Shorts are limited to 60 seconds maximum</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="shorts_style">Content Style:</label>
+                                <select id="shorts_style" name="shorts_style" class="form-control">
+                                    <option value="informative" {{ 'selected' if shorts_settings.style == 'informative' else '' }}>Informative</option>
+                                    <option value="entertaining" {{ 'selected' if shorts_settings.style == 'entertaining' else '' }}>Entertaining</option>
+                                    <option value="educational" {{ 'selected' if shorts_settings.style == 'educational' else '' }}>Educational</option>
+                                    <option value="casual" {{ 'selected' if shorts_settings.style == 'casual' else '' }}>Casual/Conversational</option>
+                                    <option value="surprising" {{ 'selected' if shorts_settings.style == 'surprising' else '' }}>Surprising/Shocking</option>
+                                </select>
+                                <div class="setting-help">Defines the overall tone and presentation style</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Format:</label>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="vertical_format" name="vertical_format" {{ 'checked' if shorts_settings.vertical_format else '' }}>
+                                    <label for="vertical_format">Always use vertical format (9:16 ratio) for Shorts</label>
+                                </div>
+                                <div class="setting-help">Vertical format is recommended for the best Shorts experience</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Editing Pace:</label>
+                                <div class="radio-group">
+                                    <div class="radio-option">
+                                        <input type="radio" id="fast_pace" name="shorts_pace" value="fast" {{ 'checked' if shorts_settings.fast_paced else '' }}>
+                                        <label for="fast_pace">Fast-paced</label>
+                                    </div>
+                                    <div class="radio-option">
+                                        <input type="radio" id="moderate_pace" name="shorts_pace" value="moderate" {{ 'checked' if not shorts_settings.fast_paced else '' }}>
+                                        <label for="moderate_pace">Moderate pace</label>
+                                    </div>
+                                </div>
+                                <div class="setting-help">Fast-paced editing typically performs better on Shorts</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Auto Upload:</label>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="auto_upload" name="auto_upload" {{ 'checked' if shorts_settings.auto_upload else '' }}>
+                                    <label for="auto_upload">Automatically upload Shorts to YouTube after generation</label>
+                                </div>
+                                <div class="setting-help">When disabled, Shorts will be saved locally for manual review before upload</div>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Shorts Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- YouTube Tab -->
+                <div class="tab-content" id="youtube-tab">
+                    <div class="settings-card">
+                        <div class="settings-heading">
+                            <i class="fab fa-youtube"></i>
+                            <h3>YouTube Integration</h3>
+                        </div>
+                        
+                        <p>Configure your YouTube channel integration for automated Shorts uploads and analytics.</p>
+                        
+                        {% if youtube_channel %}
+                        <!-- Connected Channel Info -->
+                        <div class="youtube-channel">
+                            <img src="{{ youtube_channel.avatar }}" alt="{{ youtube_channel.name }}" class="channel-avatar">
+                            <div class="channel-info">
+                                <div class="channel-name">{{ youtube_channel.name }}</div>
+                                <div class="channel-stats">
+                                    <div class="channel-stat">
+                                        <i class="fas fa-users"></i>
+                                        <span>{{ youtube_channel.subscribers }} subscribers</span>
+                                    </div>
+                                    <div class="channel-stat">
+                                        <i class="fas fa-film"></i>
+                                        <span>{{ youtube_channel.videos }} videos</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn btn-sm btn-outline">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                        {% else %}
+                        <!-- Connect YouTube Channel -->
+                        <div class="connect-youtube">
+                            <div class="connect-icon">
+                                <i class="fab fa-youtube"></i>
+                            </div>
+                            <div class="connect-content">
+                                <div class="connect-title">Connect YouTube Channel</div>
+                                <div class="connect-description">Connect your YouTube channel to enable automatic uploads and access analytics data.</div>
+                                <button class="btn btn-primary" id="connect-youtube-btn">
+                                    <i class="fas fa-plug"></i> Connect Channel
+                                </button>
+                            </div>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="settings-section-title">YouTube Shorts Settings</div>
+                        
+                        <form id="youtube-settings-form" action="/settings/youtube" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="form-group">
+                                <label for="privacy_status">Default Privacy Status:</label>
+                                <select id="privacy_status" name="privacy_status" class="form-control">
+                                    <option value="private">Private (only you can view)</option>
+                                    <option value="unlisted">Unlisted (anyone with the link can view)</option>
+                                    <option value="public">Public (visible to everyone)</option>
+                                </select>
+                                <div class="setting-help">Uploaded Shorts will have this privacy status by default</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="shorts_tags">Default Tags:</label>
+                                <input type="text" id="shorts_tags" name="shorts_tags" class="form-control tags-input" placeholder="Add tags (comma-separated)" value="{{ shorts_settings.tags }}">
+                                <div class="tags-container" id="tags-container">
+                                    <!-- Tags will be added here dynamically -->
+                                </div>
+                                <div class="setting-help">Always include these tags with your Shorts uploads</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Notify Subscribers:</label>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="notify_subscribers" name="notify_subscribers">
+                                    <label for="notify_subscribers">Notify subscribers when public Shorts are uploaded</label>
+                                </div>
+                                <div class="setting-help">Only applies to publicly visible Shorts</div>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save YouTube Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Advanced Tab -->
+                <div class="tab-content" id="advanced-tab">
+                    <div class="settings-card">
+                        <div class="settings-heading">
+                            <i class="fas fa-sliders-h"></i>
+                            <h3>Advanced Settings</h3>
+                        </div>
+                        
+                        <p>Configure advanced settings for the YouTube Shorts Automation system. These settings affect system behavior and performance. Only change these if you understand what they do.</p>
+                        
+                        <form id="advanced-settings-form" action="/settings/advanced" method="post">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="form-group">
+                                <label for="api_retry_attempts">API Retry Attempts:</label>
+                                <select id="api_retry_attempts" name="api_retry_attempts" class="form-control">
+                                    <option value="1">1 attempt</option>
+                                    <option value="2">2 attempts</option>
+                                    <option value="3" selected>3 attempts</option>
+                                    <option value="5">5 attempts</option>
+                                </select>
+                                <div class="setting-help">Number of times to retry API calls if they fail</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="preferred_model">Preferred AI Model:</label>
+                                <select id="preferred_model" name="preferred_model" class="form-control">
+                                    <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Fast, lower cost)</option>
+                                    <option value="gpt-4">GPT-4 (Higher quality, higher cost)</option>
+                                    <option value="gpt-4o">GPT-4o (Balanced performance)</option>
+                                </select>
+                                <div class="setting-help">Model used for content generation (affects API costs)</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="api_quota">API Quota Usage:</label>
+                                <input type="range" id="api_quota" name="api_quota" min="0" max="100" value="60" class="form-control">
+                                <div class="d-flex justify-between">
+                                    <span>More Templates</span>
+                                    <span id="api_quota_value">60%</span>
+                                    <span>More API</span>
+                                </div>
+                                <div class="setting-help">Balance between template-based and API-based content generation</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Storage Management:</label>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="auto_cleanup" name="auto_cleanup">
+                                    <label for="auto_cleanup">Automatically clean up old temporary files</label>
+                                </div>
+                                <div class="setting-help">Removes intermediate files after Shorts are generated</div>
+                            </div>
+                            
+                            <div class="form-divider"></div>
+                            
+                            <div class="form-group">
+                                <label>Reset System:</label>
+                                <div class="d-flex gap-2 mt-2">
+                                    <button type="button" class="btn btn-outline" id="clear-cache-btn">
+                                        <i class="fas fa-broom"></i> Clear Cache
+                                    </button>
+                                    <button type="button" class="btn btn-danger" id="reset-settings-btn">
+                                        <i class="fas fa-exclamation-triangle"></i> Reset All Settings
+                                    </button>
+                                </div>
+                                <div class="setting-help mt-2">Resetting all settings will restore defaults and clear all saved API keys</div>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> Save Advanced Settings
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="toast-container" class="toast-container"></div>
+    
+    <script src="/static/js/shorts_main.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab switching functionality
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    this.classList.add('active');
+                    document.getElementById(`${tabId}-tab`).classList.add('active');
+                });
+            });
+            
+            // Toggle password visibility
+            document.querySelectorAll('.toggle-password').forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const input = document.getElementById(targetId);
+                    const icon = this.querySelector('i');
+                    
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                    } else {
+                        input.type = 'password';
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                    }
+                });
+            });
+            
+            // Tags functionality
+            const tagsInput = document.getElementById('shorts_tags');
+            const tagsContainer = document.getElementById('tags-container');
+            
+            function updateTagsContainer() {
+                if (!tagsInput || !tagsContainer) return;
+                
+                tagsContainer.innerHTML = '';
+                
+                const tags = tagsInput.value.split(',')
+                    .map(tag => tag.trim())
+                    .filter(tag => tag !== '');
+                
+                tags.forEach(tag => {
+                    const tagElement = document.createElement('div');
+                    tagElement.className = 'tag';
+                    tagElement.innerHTML = `
+                        <span>${tag}</span>
+                        <span class="tag-remove" data-tag="${tag}">
+                            <i class="fas fa-times"></i>
+                        </span>
+                    `;
+                    tagsContainer.appendChild(tagElement);
+                });
+                
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.tag-remove').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const tagToRemove = this.getAttribute('data-tag');
+                        const currentTags = tagsInput.value.split(',')
+                            .map(tag => tag.trim())
+                            .filter(tag => tag !== '' && tag !== tagToRemove);
+                        
+                        tagsInput.value = currentTags.join(', ');
+                        updateTagsContainer();
+                    });
+                });
+            }
+            
+            if (tagsInput) {
+                // Initialize tags container
+                updateTagsContainer();
+                
+                // Update tags when input changes
+                tagsInput.addEventListener('blur', updateTagsContainer);
+                tagsInput.addEventListener('keyup', function(e) {
+                    if (e.key === 'Enter' || e.key === ',') {
+                        updateTagsContainer();
+                    }
+                });
+            }
+            
+            // API Quota Slider
+            const apiQuotaSlider = document.getElementById('api_quota');
+            const apiQuotaValue = document.getElementById('api_quota_value');
+            
+            if (apiQuotaSlider && apiQuotaValue) {
+                apiQuotaSlider.addEventListener('input', function() {
+                    apiQuotaValue.textContent = `${this.value}%`;
+                });
+            }
+            
+            // Button event listeners
+            document.getElementById('connect-youtube-btn')?.addEventListener('click', function() {
+                showToast('info', 'YouTube Connection', 'Redirecting to YouTube authorization...');
+                
+                // Simulate connection process
+                setTimeout(() => {
+                    showToast('success', 'Connection Successful', 'Your YouTube channel has been connected successfully!');
+                    // Reload page to show connected state
+                    // location.reload();
+                }, 2000);
+            });
+            
+            document.getElementById('clear-cache-btn')?.addEventListener('click', function() {
+                if (confirm('Are you sure you want to clear the system cache? This will not affect your generated Shorts.')) {
+                    showToast('info', 'Cache Cleared', 'System cache has been cleared successfully.');
+                }
+            });
+            
+            document.getElementById('reset-settings-btn')?.addEventListener('click', function() {
+                if (confirm('WARNING: This will reset all settings to their default values and clear all saved API keys. Are you sure you want to continue?')) {
+                    showToast('warning', 'Settings Reset', 'All settings have been reset to their default values.');
+                }
+            });
+            
+            // Form submission handlers
+            document.getElementById('api-keys-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch('/settings/api-keys', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('success', 'API Keys Saved', 'Your API keys have been saved successfully.');
+                    } else {
+                        showToast('error', 'Error', data.message || 'There was an error saving your API keys.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('error', 'Submission Error', 'There was a problem with your submission.');
+                });
+            });
+            
+            document.getElementById('shorts-settings-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch('/settings/shorts', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('success', 'Settings Saved', 'Your Shorts settings have been saved successfully.');
+                    } else {
+                        showToast('error', 'Error', data.message || 'There was an error saving your settings.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('error', 'Submission Error', 'There was a problem with your submission.');
+                });
+            });
+            
+            document.getElementById('youtube-settings-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch('/settings/youtube', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('success', 'Settings Saved', 'Your YouTube settings have been saved successfully.');
+                    } else {
+                        showToast('error', 'Error', data.message || 'There was an error saving your settings.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('error', 'Submission Error', 'There was a problem with your submission.');
+                });
+            });
+            
+            document.getElementById('advanced-settings-form')?.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                
+                fetch('/settings/advanced', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('success', 'Settings Saved', 'Your advanced settings have been saved successfully.');
+                    } else {
+                        showToast('error', 'Error', data.message || 'There was an error saving your settings.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('error', 'Submission Error', 'There was a problem with your submission.');
+                });
+            });
+            
+            // Toast notification function (if not already defined)
+            if (typeof showToast !== 'function') {
+                function showToast(type, title, message, duration = 5000) {
+                    const toastContainer = document.getElementById('toast-container');
+                    
+                    if (!toastContainer) {
+                        const container = document.createElement('div');
+                        container.id = 'toast-container';
+                        container.className = 'toast-container';
+                        document.body.appendChild(container);
+                    }
+                    
+                    const toast = document.createElement('div');
+                    toast.className = `toast toast-${type}`;
+                    
+                    let iconClass = 'fas fa-info-circle';
+                    if (type === 'success') iconClass = 'fas fa-check-circle';
+                    if (type === 'error') iconClass = 'fas fa-exclamation-circle';
+                    if (type === 'warning') iconClass = 'fas fa-exclamation-triangle';
+                    
+                    toast.innerHTML = `
+                        <div class="toast-icon"><i class="${iconClass}"></i></div>
+                        <div class="toast-content">
+                            <div class="toast-title">${title}</div>
+                            <div class="toast-message">${message}</div>
+                        </div>
+                        <div class="toast-close"><i class="fas fa-times"></i></div>
+                    `;
+                    
+                    document.getElementById('toast-container').appendChild(toast);
+                    
+                    // Add click event to close button
+                    toast.querySelector('.toast-close').addEventListener('click', () => {
+                        toast.style.animation = 'slide-out 0.3s forwards';
+                        setTimeout(() => {
+                            toast.remove();
+                        }, 300);
+                    });
+                    
+                    // Auto remove after duration
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toast.style.animation = 'slide-out 0.3s forwards';
+                            setTimeout(() => {
+                                if (toast.parentNode) toast.remove();
+                            }, 300);
+                        }
+                    }, duration);
+                }
+            }
+        });
+    </script>
+</body>
+</html>

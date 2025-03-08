@@ -139,1322 +139,22 @@ if not os.path.exists(placeholder_img_path):
         with open(placeholder_img_path, 'wb') as f:
             f.write(b'')
 
-# Create CSS file with improved mobile support
-with open('static/css/shorts_style.css', 'w') as f:
-    f.write("""
-:root {
-    --primary-color: #ff0000;  /* YouTube red */
-    --secondary-color: #cc0000;
-    --accent-color: #ff9900;
-    --success-color: #28a745;
-    --warning-color: #ffc107;
-    --danger-color: #dc3545;
-    --info-color: #17a2b8;
-    --text-color: #333333;
-    --light-bg: #f8f9fa;
-    --dark-bg: #343a40;
-    --card-bg: white;
-    --border-color: #e5e5e5;
-    --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    --transition: all 0.3s ease;
-}
-
-[data-theme="dark"] {
-    --primary-color: #ff4444;
-    --secondary-color: #cc4444;
-    --text-color: #f1f1f1;
-    --light-bg: #2d2d2d;
-    --dark-bg: #1a1a1a;
-    --card-bg: #2d2d2d;
-    --border-color: #444;
-    --shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: var(--light-bg);
-    color: var(--text-color);
-    transition: var(--transition);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-}
-
-.container {
-    max-width: 1200px;
-    width: 100%;
-    margin: 0 auto;
-    padding: 20px;
-    flex: 1;
-}
-
-/* Header and Navigation */
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background-color: var(--primary-color);
-    box-shadow: var(--shadow);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    color: white;
-}
-
-.header h1 {
-    color: white;
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.logo-icon {
-    font-size: 1.8rem;
-}
-
-.nav-links {
-    display: flex;
-    gap: 1.5rem;
-}
-
-.nav-link {
-    color: white;
-    text-decoration: none;
-    font-weight: 500;
-    padding: 0.5rem 0;
-    position: relative;
-}
-
-.nav-link:after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 2px;
-    bottom: 0;
-    left: 0;
-    background-color: white;
-    transition: width 0.3s;
-}
-
-.nav-link:hover:after,
-.nav-link.active:after {
-    width: 100%;
-}
-
-.mobile-menu-btn {
-    display: none;
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-}
-
-/* Theme Switch */
-.theme-switch {
-    position: relative;
-    display: inline-block;
-    width: 60px;
-    height: 30px;
-    margin-left: 1rem;
-}
-
-.theme-switch input {
-    opacity: 0;
-    width: 0;
-    height: 0;
-}
-
-.slider {
-    position: absolute;
-    cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: #ccc;
-    transition: .4s;
-    border-radius: 34px;
-}
-
-.slider:before {
-    position: absolute;
-    content: "";
-    height: 22px;
-    width: 22px;
-    left: 4px;
-    bottom: 4px;
-    background-color: white;
-    transition: .4s;
-    border-radius: 50%;
-}
-
-input:checked + .slider {
-    background-color: var(--primary-color);
-}
-
-input:checked + .slider:before {
-    transform: translateX(30px);
-}
-
-/* Cards and Layout */
-.card {
-    background-color: var(--card-bg);
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-    transition: var(--transition);
-    border: 1px solid var(--border-color);
-}
-
-.card h2 {
-    margin-top: 0;
-    color: var(--primary-color);
-    font-size: 1.3rem;
-    font-weight: 500;
-    margin-bottom: 1.2rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.6rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.section-icon {
-    font-size: 1.4rem;
-}
-
-.dashboard-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-}
-
-/* Forms and Inputs */
-.form-group {
-    margin-bottom: 1.2rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
-    color: var(--text-color);
-}
-
-.form-control {
-    width: 100%;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    font-size: 1rem;
-    transition: border-color 0.3s;
-    background-color: var(--card-bg);
-    color: var(--text-color);
-}
-
-.form-control:focus {
-    border-color: var(--primary-color);
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.2);
-}
-
-.checkbox-group {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-/* Buttons */
-.btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 4px;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-}
-
-.btn-primary {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.btn-primary:hover {
-    background-color: var(--secondary-color);
-}
-
-.btn-outline {
-    background-color: transparent;
-    border: 2px solid var(--primary-color);
-    color: var(--primary-color);
-}
-
-.btn-outline:hover {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.btn-danger {
-    background-color: var(--danger-color);
-    color: white;
-}
-
-.btn-danger:hover {
-    background-color: #c82333;
-}
-
-.btn-sm {
-    padding: 0.4rem 0.8rem;
-    font-size: 0.875rem;
-}
-
-/* Status Cards */
-.status-card {
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: flex-start;
-    background-color: rgba(0, 0, 0, 0.03);
-    position: relative;
-    border-left: 5px solid transparent;
-}
-
-.status-indicator {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    margin-right: 1rem;
-    flex-shrink: 0;
-    margin-top: 0.25rem;
-}
-
-.status-message {
-    flex-grow: 1;
-}
-
-.status-title {
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-}
-
-.status-detail {
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-}
-
-.status-time {
-    font-size: 0.8rem;
-    color: #777;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    min-width: 100px;
-}
-
-[data-theme="dark"] .status-time {
-    color: #aaa;
-}
-
-.status-controls {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-}
-
-.status-completed {
-    background-color: rgba(40, 167, 69, 0.1);
-    border-left-color: var(--success-color);
-}
-.status-completed .status-indicator {
-    background-color: var(--success-color);
-}
-
-.status-in-progress {
-    background-color: rgba(23, 162, 184, 0.1);
-    border-left-color: var(--info-color);
-}
-.status-in-progress .status-indicator {
-    background-color: var(--info-color);
-}
-
-.status-failed {
-    background-color: rgba(220, 53, 69, 0.1);
-    border-left-color: var(--danger-color);
-}
-.status-failed .status-indicator {
-    background-color: var(--danger-color);
-}
-
-.status-paused {
-    background-color: rgba(255, 193, 7, 0.1);
-    border-left-color: var(--warning-color);
-}
-.status-paused .status-indicator {
-    background-color: var(--warning-color);
-}
-
-/* Progress Bar */
-.progress-container {
-    width: 100%;
-    background-color: #e0e0e0;
-    border-radius: 4px;
-    height: 8px;
-    margin-top: 0.5rem;
-    overflow: hidden;
-}
-
-[data-theme="dark"] .progress-container {
-    background-color: #444;
-}
-
-.progress-bar {
-    height: 100%;
-    background-color: var(--primary-color);
-    width: 0%;
-    transition: width 0.3s ease;
-    border-radius: 4px;
-}
-
-/* Video Gallery - Modified for Vertical Shorts */
-.video-gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1.5rem;
-    margin-top: 1.2rem;
-}
-
-.video-item {
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    transition: transform 0.3s;
-    background-color: var(--card-bg);
-    border: 1px solid var(--border-color);
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.video-item:hover {
-    transform: translateY(-5px);
-}
-
-.video-thumbnail {
-    width: 100%;
-    /* Adjusted for vertical shorts aspect ratio (9:16) */
-    height: 280px;
-    background-color: #000;
-    position: relative;
-    overflow: hidden;
-}
-
-.video-thumbnail img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s;
-}
-
-.video-item:hover .video-thumbnail img {
-    transform: scale(1.05);
-}
-
-.play-button {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 50px;
-    height: 50px;
-    background-color: rgba(0, 0, 0, 0.7);
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-.video-item:hover .play-button {
-    opacity: 1;
-}
-
-.play-button:before {
-    content: "";
-    width: 0;
-    height: 0;
-    border-top: 10px solid transparent;
-    border-bottom: 10px solid transparent;
-    border-left: 15px solid white;
-    margin-left: 5px;
-}
-
-.video-info {
-    padding: 1rem;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.video-title {
-    margin: 0 0 0.6rem 0;
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--text-color);
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    line-height: 1.4;
-}
-
-.video-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.875rem;
-    color: #777;
-    margin-top: auto;
-}
-
-[data-theme="dark"] .video-meta {
-    color: #aaa;
-}
-
-.video-options {
-    display: flex;
-    margin-top: 0.8rem;
-    gap: 0.5rem;
-}
-
-/* Shorts badge */
-.shorts-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: var(--primary-color);
-    color: white;
-    font-weight: bold;
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.7rem;
-    z-index: 2;
-}
-
-/* Badges */
-.badge {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-
-.badge-primary {
-    background-color: var(--primary-color);
-    color: white;
-}
-
-.badge-success {
-    background-color: var(--success-color);
-    color: white;
-}
-
-.badge-warning {
-    background-color: var(--warning-color);
-    color: black;
-}
-
-.badge-danger {
-    background-color: var(--danger-color);
-    color: white;
-}
-
-.badge-info {
-    background-color: var(--info-color);
-    color: white;
-}
-
-/* Stats Grid */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-}
-
-.stat-card {
-    background-color: var(--card-bg);
-    border-radius: 8px;
-    padding: 1.2rem;
-    box-shadow: var(--shadow);
-    text-align: center;
-    border: 1px solid var(--border-color);
-    transition: var(--transition);
-}
-
-.stat-card:hover {
-    transform: translateY(-3px);
-}
-
-.stat-icon {
-    font-size: 1.8rem;
-    color: var(--primary-color);
-    margin-bottom: 0.8rem;
-}
-
-.stat-value {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-    color: var(--primary-color);
-}
-
-.stat-label {
-    font-size: 0.875rem;
-    color: #777;
-}
-
-[data-theme="dark"] .stat-label {
-    color: #aaa;
-}
-
-/* Empty State */
-.empty-state {
-    text-align: center;
-    padding: 2.5rem 1.2rem;
-    color: #777;
-}
-
-[data-theme="dark"] .empty-state {
-    color: #aaa;
-}
-
-.empty-state i {
-    font-size: 3rem;
-    margin-bottom: 1.2rem;
-    display: block;
-    color: var(--primary-color);
-    opacity: 0.5;
-}
-
-/* Media Queries for Responsiveness */
-@media (max-width: 1024px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    
-    .dashboard-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 768px) {
-    .container {
-        padding: 15px;
-    }
-    
-    .stats-grid {
-        gap: 10px;
-    }
-    
-    .video-gallery {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    }
-    
-    .header h1 {
-        font-size: 1.2rem;
-    }
-    
-    .nav-links {
-        display: none;
-        flex-direction: column;
-        position: absolute;
-        top: 100%;
-        left: 0;
-        width: 100%;
-        background-color: var(--primary-color);
-        box-shadow: var(--shadow);
-        padding: 1rem;
-        z-index: 99;
-    }
-    
-    .nav-links.active {
-        display: flex;
-    }
-    
-    .mobile-menu-btn {
-        display: block;
-    }
-}
-
-@media (max-width: 480px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .video-gallery {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    }
-    
-    .card {
-        padding: 1rem;
-    }
-    
-    .btn {
-        width: 100%;
-        margin-bottom: 0.5rem;
-    }
-}
-
-/* Utilities */
-.mt-1 { margin-top: 0.5rem; }
-.mt-2 { margin-top: 1rem; }
-.mt-3 { margin-top: 1.5rem; }
-.mb-1 { margin-bottom: 0.5rem; }
-.mb-2 { margin-bottom: 1rem; }
-.mb-3 { margin-bottom: 1.5rem; }
-.ml-1 { margin-left: 0.5rem; }
-.ml-2 { margin-left: 1rem; }
-.mr-1 { margin-right: 0.5rem; }
-.mr-2 { margin-right: 1rem; }
-
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.text-success { color: var(--success-color); }
-.text-danger { color: var(--danger-color); }
-.text-warning { color: var(--warning-color); }
-.text-info { color: var(--info-color); }
-
-.d-flex { display: flex; }
-.flex-wrap { flex-wrap: wrap; }
-.align-center { align-items: center; }
-.justify-between { justify-content: space-between; }
-.justify-end { justify-content: flex-end; }
-.gap-1 { gap: 0.5rem; }
-.gap-2 { gap: 1rem; }
-
-.w-100 { width: 100%; }
-.h-100 { height: 100%; }
-    """)
-
-# Create main JavaScript file
-with open('static/js/shorts_main.js', 'w') as f:
-    f.write("""
-// Theme Toggle Functionality
-function initThemeToggle() {
-    const toggleSwitch = document.getElementById('theme-toggle');
-    const themeLabel = document.getElementById('theme-label');
-    
-    function switchTheme(e) {
-        if (e.target.checked) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            themeLabel.textContent = 'Light Mode';
-            localStorage.setItem('theme', 'dark');
-        } else {
-            document.documentElement.setAttribute('data-theme', 'light');
-            themeLabel.textContent = 'Dark Mode';
-            localStorage.setItem('theme', 'light');
-        }
-    }
-    
-    // Check for saved theme preference
-    const currentTheme = localStorage.getItem('theme') || 'light';
-    if (currentTheme === 'dark') {
-        toggleSwitch.checked = true;
-        document.documentElement.setAttribute('data-theme', 'dark');
-        themeLabel.textContent = 'Light Mode';
-    }
-    
-    toggleSwitch.addEventListener('change', switchTheme);
-}
-
-// Mobile Menu Toggle
-function initMobileMenu() {
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const navLinks = document.getElementById('nav-links');
-    
-    if (mobileMenuBtn) {
-        mobileMenuBtn.addEventListener('click', () => {
-            navLinks.classList.toggle('active');
-        });
-    }
-}
-
-// Toast Notifications
-function showToast(type, title, message, duration = 5000) {
-    const toastContainer = document.getElementById('toast-container');
-    
-    if (!toastContainer) {
-        const container = document.createElement('div');
-        container.id = 'toast-container';
-        container.className = 'toast-container';
-        document.body.appendChild(container);
-    }
-    
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    
-    let iconClass = 'fas fa-info-circle';
-    if (type === 'success') iconClass = 'fas fa-check-circle';
-    if (type === 'error') iconClass = 'fas fa-exclamation-circle';
-    if (type === 'warning') iconClass = 'fas fa-exclamation-triangle';
-    
-    toast.innerHTML = `
-        <div class="toast-icon"><i class="${iconClass}"></i></div>
-        <div class="toast-content">
-            <div class="toast-title">${title}</div>
-            <div class="toast-message">${message}</div>
-        </div>
-        <div class="toast-close"><i class="fas fa-times"></i></div>
-    `;
-    
-    document.getElementById('toast-container').appendChild(toast);
-    
-    // Add click event to close button
-    toast.querySelector('.toast-close').addEventListener('click', () => {
-        toast.style.animation = 'slide-out 0.3s forwards';
-        setTimeout(() => {
-            toast.remove();
-        }, 300);
-    });
-    
-    // Auto remove after duration
-    setTimeout(() => {
-        if (toast.parentNode) {
-            toast.style.animation = 'slide-out 0.3s forwards';
-            setTimeout(() => {
-                if (toast.parentNode) toast.remove();
-            }, 300);
-        }
-    }, duration);
-}
-
-// Initialize Dashboard Updates
-function initDashboardUpdates() {
-    function updateDashboard() {
-        fetch('/status')
-            .then(response => response.json())
-            .then(data => {
-                // Update stats
-                if (document.getElementById('total-shorts')) {
-                    document.getElementById('total-shorts').textContent = data.stats.total_videos;
-                }
-                if (document.getElementById('shorts-today')) {
-                    document.getElementById('shorts-today').textContent = data.stats.videos_today;
-                }
-                if (document.getElementById('active-jobs')) {
-                    document.getElementById('active-jobs').textContent = data.stats.active_jobs;
-                }
-                if (document.getElementById('success-rate')) {
-                    document.getElementById('success-rate').textContent = data.stats.success_rate + '%';
-                }
-                
-                // Update jobs list
-                const jobsList = document.getElementById('jobsList');
-                if (jobsList) {
-                    if (data.jobs && data.jobs.length > 0) {
-                        let jobsHTML = '';
-                        data.jobs.forEach(job => {
-                            let statusClass = `status-${job.status}`;
-                            let progress = job.progress || 0;
-                            
-                            if (job.status === 'completed') progress = 100;
-                            if (job.status === 'failed') progress = 0;
-                            
-                            let statusIcon = '';
-                            if (job.status === 'completed') statusIcon = '<i class="fas fa-check"></i>';
-                            else if (job.status === 'failed') statusIcon = '<i class="fas fa-times"></i>';
-                            else if (job.status === 'paused') statusIcon = '<i class="fas fa-pause"></i>';
-                            
-                            jobsHTML += `
-                                <div class="status-card ${statusClass}" id="job-${job.id}">
-                                    <div class="status-indicator"></div>
-                                    <div class="status-message">
-                                        <div class="status-title">${job.niche} ${statusIcon}</div>
-                                        <div class="status-detail">${job.message}</div>
-                                        <div class="progress-container">
-                                            <div class="progress-bar" style="width: ${progress}%"></div>
-                                        </div>
-                                        ${job.status === 'in-progress' ? `
-                                        <div class="status-controls">
-                                            <button class="btn btn-sm btn-outline pause-job" data-job-id="${job.id}">
-                                                <i class="fas fa-pause"></i> Pause
-                                            </button>
-                                            <button class="btn btn-sm btn-danger cancel-job" data-job-id="${job.id}">
-                                                <i class="fas fa-times"></i> Cancel
-                                            </button>
-                                        </div>
-                                        ` : job.status === 'paused' ? `
-                                        <div class="status-controls">
-                                            <button class="btn btn-sm btn-outline resume-job" data-job-id="${job.id}">
-                                                <i class="fas fa-play"></i> Resume
-                                            </button>
-                                            <button class="btn btn-sm btn-danger cancel-job" data-job-id="${job.id}">
-                                                <i class="fas fa-times"></i> Cancel
-                                            </button>
-                                        </div>
-                                        ` : ''}
-                                    </div>
-                                    <div class="status-time">
-                                        <div><i class="far fa-clock"></i> ${job.started || 'N/A'}</div>
-                                        <div>${job.status === 'completed' ? `<i class="far fa-check-circle"></i> Completed` : 
-                                               job.status === 'failed' ? `<i class="far fa-times-circle"></i> Failed` : 
-                                               job.status === 'paused' ? `<i class="far fa-pause-circle"></i> Paused` :
-                                               `<i class="fas fa-spinner fa-spin"></i> In progress`}</div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        jobsList.innerHTML = jobsHTML;
-                        
-                        // Add event listeners for job control buttons
-                        document.querySelectorAll('.pause-job').forEach(btn => {
-                            btn.addEventListener('click', (e) => {
-                                const jobId = btn.getAttribute('data-job-id');
-                                fetch(`/job/${jobId}/pause`, { method: 'POST' })
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        if (data.success) {
-                                            showToast('info', 'Job Paused', `Job #${jobId} has been paused.`);
-                                        } else {
-                                            showToast('error', 'Error', data.message);
-                                        }
-                                    });
-                            });
-                        });
-                        
-                        document.querySelectorAll('.resume-job').forEach(btn => {
-                            btn.addEventListener('click', (e) => {
-                                const jobId = btn.getAttribute('data-job-id');
-                                fetch(`/job/${jobId}/resume`, { method: 'POST' })
-                                    .then(response => response.json())
-                                    .then(data => {
-                                        if (data.success) {
-                                            showToast('info', 'Job Resumed', `Job #${jobId} has been resumed.`);
-                                        } else {
-                                            showToast('error', 'Error', data.message);
-                                        }
-                                    });
-                            });
-                        });
-                        
-                        document.querySelectorAll('.cancel-job').forEach(btn => {
-                            btn.addEventListener('click', (e) => {
-                                const jobId = btn.getAttribute('data-job-id');
-                                if (confirm('Are you sure you want to cancel this job?')) {
-                                    fetch(`/job/${jobId}/cancel`, { method: 'POST' })
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            if (data.success) {
-                                                showToast('warning', 'Job Cancelled', `Job #${jobId} has been cancelled.`);
-                                            } else {
-                                                showToast('error', 'Error', data.message);
-                                            }
-                                        });
-                                }
-                            });
-                        });
-                        
-                    } else {
-                        jobsList.innerHTML = `
-                            <div class="empty-state">
-                                <i class="fas fa-tasks"></i>
-                                <p>No active jobs. Start a new Shorts automation job to see status here.</p>
-                            </div>
-                        `;
-                    }
-                }
-                
-                // Update shorts gallery
-                const shortsGallery = document.getElementById('shortsGallery');
-                if (shortsGallery) {
-                    if (data.videos && data.videos.length > 0) {
-                        let shortsHTML = '';
-                        data.videos.forEach(video => {
-                            shortsHTML += `
-                                <div class="video-item">
-                                    <div class="video-thumbnail">
-                                        <div class="shorts-badge">#SHORTS</div>
-                                        <!-- Use onerror to fallback to placeholder if the thumbnail fails to load -->
-                                        <img src="${video.thumbnail || '/static/images/placeholder_vertical.jpg'}" 
-                                            alt="${video.title}" 
-                                            onerror="this.onerror=null; this.src='/static/images/placeholder_vertical.jpg';">
-                                        <a href="#" class="play-button" data-video-path="${video.path}" data-video-title="${video.title}"></a>
-                                    </div>
-                                    <div class="video-info">
-                                        <h3 class="video-title">${video.title}</h3>
-                                        <div class="video-meta">
-                                            <span><i class="far fa-calendar-alt"></i> ${video.date}</span>
-                                            <span class="badge badge-${video.uploaded ? 'success' : 'warning'}">${video.uploaded ? 'Uploaded' : 'Local'}</span>
-                                        </div>
-                                        <div class="video-options">
-                                            <button class="btn btn-sm btn-outline preview-video" data-video-path="${video.path}" data-video-title="${video.title}">
-                                                <i class="fas fa-play"></i> Preview
-                                            </button>
-                                            ${!video.uploaded ? `
-                                            <button class="btn btn-sm btn-primary upload-video" data-video-path="${video.path}" data-video-title="${video.title}">
-                                                <i class="fas fa-upload"></i> Upload
-                                            </button>
-                                            ` : ''}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        shortsGallery.innerHTML = shortsHTML;
-                        
-                        // Add event listeners for video preview
-                        document.querySelectorAll('.preview-video, .play-button').forEach(btn => {
-                            btn.addEventListener('click', (e) => {
-                                e.preventDefault();
-                                const videoPath = btn.getAttribute('data-video-path');
-                                const videoTitle = btn.getAttribute('data-video-title');
-                                openVideoModal(videoPath, videoTitle);
-                            });
-                        });
-                        
-                        // Add event listeners for video upload
-                        document.querySelectorAll('.upload-video').forEach(btn => {
-                            btn.addEventListener('click', (e) => {
-                                e.preventDefault();
-                                const videoPath = btn.getAttribute('data-video-path');
-                                const videoTitle = btn.getAttribute('data-video-title');
-                                if (confirm(`Are you sure you want to upload "${videoTitle}" to YouTube as a Short?`)) {
-                                    uploadVideo(videoPath, videoTitle);
-                                }
-                            });
-                        });
-                        
-                    } else {
-                        shortsGallery.innerHTML = `
-                            <div class="empty-state">
-                                <i class="fas fa-video"></i>
-                                <p>No Shorts generated yet. Start creating content to see your Shorts here.</p>
-                            </div>
-                        `;
-                    }
-                }
-                
-                // Check for notifications
-                if (data.notifications && data.notifications.length > 0) {
-                    data.notifications.forEach(notification => {
-                        showToast(notification.type, notification.title, notification.message);
-                    });
-                }
-            })
-            .catch(error => console.error('Error fetching status:', error));
-    }
-    
-    // Function to open video preview modal
-    function openVideoModal(videoPath, videoTitle) {
-        // Create modal if it doesn't exist
-        if (!document.getElementById('videoPreviewModal')) {
-            const modal = document.createElement('div');
-            modal.id = 'videoPreviewModal';
-            modal.className = 'modal-backdrop';
-            modal.innerHTML = `
-                <div class="modal">
-                    <div class="modal-header">
-                        <div class="modal-title" id="videoModalTitle">Shorts Preview</div>
-                        <button class="modal-close">&times;</button>
-                    </div>
-                    <div class="modal-body" style="display: flex; justify-content: center;">
-                        <video id="videoPlayer" controls style="max-height: 70vh; max-width: 100%;"></video>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(modal);
-            
-            // Add event listener to close button
-            modal.querySelector('.modal-close').addEventListener('click', () => {
-                modal.classList.remove('active');
-                const videoPlayer = document.getElementById('videoPlayer');
-                videoPlayer.pause();
-                videoPlayer.src = '';
-            });
-            
-            // Close modal when clicking outside
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.classList.remove('active');
-                    const videoPlayer = document.getElementById('videoPlayer');
-                    videoPlayer.pause();
-                    videoPlayer.src = '';
-                }
-            });
-        }
-        
-        // Update modal content and open it
-        const modal = document.getElementById('videoPreviewModal');
-        document.getElementById('videoModalTitle').textContent = videoTitle;
-        
-        const videoPlayer = document.getElementById('videoPlayer');
-        videoPlayer.src = `/video/${encodeURIComponent(videoPath)}`;
-        
-        modal.classList.add('active');
-    }
-    
-    // Function to upload video to YouTube
-    function uploadVideo(videoPath, videoTitle) {
-        showToast('info', 'Upload Started', `Starting upload of "${videoTitle}" to YouTube as a Short...`);
-        
-        fetch('/upload', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                video_path: videoPath,
-                title: videoTitle
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('success', 'Upload Success', `"${videoTitle}" has been uploaded to YouTube Shorts!`);
-            } else {
-                showToast('error', 'Upload Failed', data.message || 'There was an error uploading the video.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('error', 'Upload Error', 'There was a network error while uploading the video.');
-        });
-    }
-    
-    // Update dashboard every 2 seconds
-    setInterval(updateDashboard, 2000);
-    
-    // Initialize dashboard on page load
-    updateDashboard();
-}
-
-// Document Ready
-document.addEventListener('DOMContentLoaded', function() {
-    initThemeToggle();
-    initMobileMenu();
-    initDashboardUpdates();
-    
-    // Handle trending topics click
-    document.querySelectorAll('.trending-topic').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.getElementById('niche').value = this.textContent.trim();
-        });
-    });
-    
-    // Form submission handling
-    const automationForm = document.getElementById('automationForm');
-    if (automationForm) {
-        automationForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            
-            fetch('/run', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('success', 'Job Started', `New Shorts automation job "${formData.get('niche')}" has been started.`);
-                } else {
-                    showToast('error', 'Error', data.message || 'There was an error starting the job.');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('error', 'Submission Error', 'There was a problem with your submission.');
-            });
-        });
-    }
-});
-    """)
-
-# Create the improved main HTML template
-with open('templates/shorts_index.html', 'w') as f:
-    f.write("""
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
-<head>
-    <title>YouTube Shorts Automation</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/static/css/shorts_style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-</head>
-<body>
-    <div class="header">
-        <button id="mobile-menu-btn" class="mobile-menu-btn">
-            <i class="fas fa-bars"></i>
-        </button>
-        <h1><i class="fab fa-youtube logo-icon"></i> YouTube Shorts Automation</h1>
-        <div class="nav-links" id="nav-links">
-            <a href="/" class="nav-link active">Dashboard</a>
-            <a href="/shorts" class="nav-link">My Shorts</a>
-            <a href="/analytics" class="nav-link">Analytics</a>
-            <a href="/settings" class="nav-link">Settings</a>
-        </div>
-        <div class="theme-toggle d-flex align-center">
-            <label class="theme-switch">
-                <input type="checkbox" id="theme-toggle">
-                <span class="slider"></span>
-            </label>
-            <span id="theme-label" class="ml-1">Dark Mode</span>
-        </div>
-    </div>
-
-    <div class="container">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        <div class="alert-icon">
-                            <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %}"></i>
-                        </div>
-                        <div class="alert-content">
-                            <div class="alert-message">{{ message }}</div>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-film"></i></div>
-                <div class="stat-value" id="total-shorts">0</div>
-                <div class="stat-label">Total Shorts</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
-                <div class="stat-value" id="shorts-today">0</div>
-                <div class="stat-label">Shorts Today</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-tasks"></i></div>
-                <div class="stat-value" id="active-jobs">0</div>
-                <div class="stat-label">Active Jobs</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
-                <div class="stat-value" id="success-rate">0%</div>
-                <div class="stat-label">Success Rate</div>
-            </div>
-        </div>
-
-        <div class="dashboard-grid">
-            <div class="card">
-                <h2><i class="fas fa-play-circle section-icon"></i> Create New Shorts</h2>
-                <form id="automationForm" action="/run" method="post">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    
-                    <div class="form-group">
-                        <label for="niche">Content Topic:</label>
-                        <input type="text" id="niche" name="niche" class="form-control" required placeholder="e.g., fintech tips, cryptocurrency, tech hacks">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Trending Topics:</label>
-                        <div class="d-flex flex-wrap gap-1 mb-2">
-                            <button type="button" class="btn btn-sm btn-outline trending-topic">fintech tips</button>
-                            <button type="button" class="btn btn-sm btn-outline trending-topic">crypto investing</button>
-                            <button type="button" class="btn btn-sm btn-outline trending-topic">tech tricks</button>
-                            <button type="button" class="btn btn-sm btn-outline trending-topic">productivity hacks</button>
-                            <button type="button" class="btn btn-sm btn-outline trending-topic">passive income</button>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="count">Number of Shorts:</label>
-                        <select id="count" name="count" class="form-control">
-                            <option value="1">1 Short</option>
-                            <option value="2">2 Shorts</option>
-                            <option value="3" selected>3 Shorts</option>
-                            <option value="5">5 Shorts</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label for="style">Content Style:</label>
-                        <select id="style" name="style" class="form-control">
-                            <option value="informative">Informative</option>
-                            <option value="entertaining" selected>Entertaining</option>
-                            <option value="educational">Educational</option>
-                            <option value="casual">Casual/Conversational</option>
-                            <option value="surprising">Surprising/Shocking</option>
-                        </select>
-                    </div>
-                    
-                    <div class="checkbox-group mt-2">
-                        <input type="checkbox" id="auto-upload" name="auto_upload" checked>
-                        <label for="auto-upload">Automatically upload to YouTube</label>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary mt-2"><i class="fas fa-cogs"></i> Start Shorts Generation</button>
-                </form>
-            </div>
-            
-            <div class="card">
-                <h2><i class="fas fa-tasks section-icon"></i> Active Jobs</h2>
-                <div id="jobsList">
-                    <div class="empty-state">
-                        <i class="fas fa-tasks"></i>
-                        <p>No active jobs. Start a new Shorts automation job to see status here.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h2><i class="fas fa-film section-icon"></i> Recent Shorts</h2>
-            <div id="shortsGallery" class="video-gallery">
-                <div class="empty-state">
-                    <i class="fas fa-video"></i>
-                    <p>No Shorts generated yet. Start creating content to see your Shorts here.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div id="toast-container" class="toast-container"></div>
-    
-    <script src="/static/js/shorts_main.js"></script>
-</body>
-</html>
-    """)
-
 # Main routes for the application
 @app.route('/')
 def index():
     return render_template('shorts_index.html')
 
+# Routes for My Shorts page
 @app.route('/shorts')
 def shorts():
     return render_template('shorts_videos.html')
 
+# Routes for Analytics page
+@app.route('/analytics')
+def analytics():
+    return render_template('analytics.html')
+
+# Routes for Settings page
 @app.route('/settings')
 def settings():
     # Get API keys to display (masked) in settings page
@@ -1475,11 +175,22 @@ def settings():
         'tags': '#shorts, #youtubeshorts, #viral'
     }
     
+    # Check if YouTube channel is connected (for demo purposes)
+    youtube_channel = None
+    
+    # If you want to show a connected channel for demonstration, uncomment and use this:
+    # youtube_channel = {
+    #     'name': 'Finance Tips & Tricks',
+    #     'avatar': '/static/images/channel_avatar.jpg',
+    #     'subscribers': '2.3K',
+    #     'videos': '42'
+    # }
+    
     return render_template(
         'shorts_settings.html',
         api_keys=api_keys,
         shorts_settings=shorts_settings,
-        youtube_channel=None  # Placeholder for connected channel info
+        youtube_channel=youtube_channel
     )
 
 # API endpoints for dashboard updates
@@ -1515,12 +226,14 @@ def get_status():
         'notifications': []  # Placeholder for notifications
     })
 
-# Video management endpoints
+# API endpoint for shorts data with pagination and filtering
 @app.route('/api/shorts')
 def api_shorts():
     status = request.args.get('status', 'all')
     date_filter = request.args.get('date', 'all')
     search = request.args.get('search', '')
+    page = int(request.args.get('page', '1'))
+    per_page = int(request.args.get('per_page', '12'))
     
     videos = get_video_list(shorts_only=True)
     
@@ -1541,12 +254,174 @@ def api_shorts():
         search = search.lower()
         videos = [v for v in videos if search in v.get('title', '').lower()]
     
+    # Calculate pagination
+    total_items = len(videos)
+    total_pages = (total_items + per_page - 1) // per_page
+    start_idx = (page - 1) * per_page
+    end_idx = min(start_idx + per_page, total_items)
+    
+    # Get paginated videos
+    paginated_videos = videos[start_idx:end_idx]
+    
+    # Add additional video details for display
+    enriched_videos = []
+    for video in paginated_videos:
+        video_path = os.path.join(automation.config['directories'].get('output', 'output'), video.get('path', ''))
+        
+        # Add file size if file exists
+        size = None
+        if os.path.exists(video_path):
+            size_bytes = os.path.getsize(video_path)
+            if size_bytes < 1024 * 1024:
+                size = f"{size_bytes / 1024:.1f} KB"
+            else:
+                size = f"{size_bytes / (1024 * 1024):.1f} MB"
+        
+        # Add duration if available (or estimate)
+        duration = "~60 seconds"  # Default for Shorts
+        try:
+            # Try to get actual duration with ffprobe if available
+            import subprocess
+            result = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration", 
+                 "-of", "default=noprint_wrappers=1:nokey=1", video_path],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False
+            )
+            if result.returncode == 0:
+                duration_seconds = float(result.stdout.strip())
+                duration = f"{int(duration_seconds // 60)}:{int(duration_seconds % 60):02d}"
+        except:
+            pass
+        
+        # Add random views count for uploaded videos (for demo purposes)
+        views = None
+        if video.get('uploaded', False):
+            views = random.randint(500, 10000)
+        
+        # Add enhanced details to the video object
+        enhanced_video = video.copy()
+        enhanced_video.update({
+            'size': size,
+            'duration': duration,
+            'views': views,
+            # Generate a fake YouTube video ID for demo purposes
+            'videoId': f"YT_{video.get('id', '')}" if video.get('uploaded', False) else None
+        })
+        
+        enriched_videos.append(enhanced_video)
+    
+    # Count stats for the response
+    stats = {
+        'total': total_items,
+        'uploaded': len([v for v in videos if v.get('uploaded', False)]),
+        'local': len([v for v in videos if not v.get('uploaded', False)]),
+        'views': sum([v.get('views', 0) for v in videos if isinstance(v.get('views', 0), int)])
+    }
+    
+    # Return the data with pagination info
     return jsonify({
         'success': True,
-        'videos': videos
+        'videos': enriched_videos,
+        'stats': stats,
+        'pagination': {
+            'current_page': page,
+            'total_pages': total_pages,
+            'total_items': total_items,
+            'per_page': per_page
+        }
     })
 
-# Settings endpoints
+# API endpoint to delete a video
+@app.route('/video/<video_id>/delete', methods=['POST'])
+def delete_video(video_id):
+    videos = get_video_list(shorts_only=True)
+    
+    # Find the video with the given ID
+    video_to_delete = None
+    for video in videos:
+        if video.get('id') == video_id:
+            video_to_delete = video
+            break
+    
+    if not video_to_delete:
+        return jsonify({
+            'success': False,
+            'message': f"Video with ID {video_id} not found."
+        })
+    
+    # Get the video file path
+    video_path = os.path.join(automation.config['directories'].get('output', 'output'), 
+                              video_to_delete.get('path', ''))
+    
+    # Try to delete the video file
+    try:
+        if os.path.exists(video_path):
+            os.remove(video_path)
+            
+            # Also try to delete the thumbnail if it exists
+            thumbnail_basename = os.path.splitext(os.path.basename(video_path))[0]
+            thumbnail_dir = automation.config['directories'].get('thumbnails', 'thumbnails')
+            thumbnail_path = os.path.join(thumbnail_dir, f"{thumbnail_basename}.png")
+            
+            if os.path.exists(thumbnail_path):
+                os.remove(thumbnail_path)
+                
+            return jsonify({
+                'success': True,
+                'message': f"Video '{video_to_delete.get('title', '')}' has been deleted."
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': f"Video file not found: {video_path}"
+            })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f"Error deleting video: {str(e)}"
+        })
+
+# API endpoint for analytics data
+@app.route('/api/analytics')
+def api_analytics():
+    start_date = request.args.get('start_date', None)
+    end_date = request.args.get('end_date', None)
+    
+    # If no dates provided, default to last 30 days
+    if not start_date:
+        end_datetime = datetime.now()
+        start_datetime = end_datetime - timedelta(days=30)
+        start_date = start_datetime.strftime('%Y-%m-%d')
+        end_date = end_datetime.strftime('%Y-%m-%d')
+    
+    # Get analytics data
+    # For demo purposes, we'll generate random data
+    views_data = generate_random_views_data(start_date, end_date)
+    top_videos = get_top_videos(5)  # Get top 5 videos
+    engagement_data = generate_random_engagement_data()
+    demographics_data = generate_random_demographics_data()
+    geographic_data = generate_random_geographic_data()
+    device_data = generate_random_device_data()
+    performance_data = generate_random_performance_data()
+    
+    return jsonify({
+        'success': True,
+        'views_data': views_data,
+        'top_videos': top_videos,
+        'engagement_data': engagement_data,
+        'demographics_data': demographics_data,
+        'geographic_data': geographic_data,
+        'device_data': device_data,
+        'performance_data': performance_data,
+        'summary': {
+            'total_views': sum(point['views'] for point in views_data),
+            'total_likes': random.randint(1000, 5000),
+            'total_comments': random.randint(100, 1000),
+            'total_shares': random.randint(50, 500)
+        }
+    })
+
+# API endpoint for saving API keys
 @app.route('/settings/api-keys', methods=['POST'])
 def save_api_keys():
     if request.method == 'POST':
@@ -1556,53 +431,168 @@ def save_api_keys():
         automation.api_keys['pexels'] = request.form.get('pexels_api_key', '')
         automation.api_keys['youtube'] = request.form.get('youtube_api_key', '')
         
-        # Save to environment or config
-        # (simplified for demonstration)
+        # In a real application, you would save these to environment variables or a secure config
+        # For demo purposes, we'll just update them in memory
         
         return jsonify({
             'success': True,
             'message': 'API keys updated successfully'
         })
 
+# API endpoint for saving Shorts settings
 @app.route('/settings/shorts', methods=['POST'])
 def save_shorts_settings():
     if request.method == 'POST':
-        # Get shorts_settings or create if it doesn't exist
+        # Get or create shorts_settings in config
         if 'shorts_settings' not in automation.config:
             automation.config['shorts_settings'] = {}
             
         # Update shorts settings
-        automation.config['shorts_settings']['max_duration'] = int(request.form.get('shorts_duration', 60))
-        automation.config['shorts_settings']['vertical_format'] = request.form.get('vertical_format', 'off') == 'on'
-        automation.config['shorts_settings']['fast_paced'] = request.form.get('shorts_pace', 'fast') == 'fast'
+        shorts_duration = int(request.form.get('shorts_duration', 60))
+        automation.config['shorts_settings']['max_duration'] = shorts_duration
         
-        # Update general settings
+        # Update vertical format setting
+        vertical_format = request.form.get('vertical_format', 'off') == 'on'
+        automation.config['shorts_settings']['vertical_format'] = vertical_format
+        
+        # Update pace setting
+        fast_paced = request.form.get('shorts_pace', 'fast') == 'fast'
+        automation.config['shorts_settings']['fast_paced'] = fast_paced
+        
+        # Update style setting
         automation.config['style'] = request.form.get('shorts_style', 'entertaining')
         
-        # Auto upload setting
+        # Update auto upload setting
         auto_upload = request.form.get('auto_upload', 'off') == 'on'
+        automation.config['shorts_settings']['auto_upload'] = auto_upload
+        
+        # In a real application, you would save these to a config file
+        # For demo purposes, we'll just update them in memory
         
         return jsonify({
             'success': True,
             'message': 'Shorts settings updated successfully'
         })
 
+# API endpoint for saving YouTube settings
 @app.route('/settings/youtube', methods=['POST'])
 def save_youtube_settings():
     if request.method == 'POST':
-        # Save YouTube settings (simplified)
+        # Get or create shorts_settings in config
         if 'shorts_settings' not in automation.config:
             automation.config['shorts_settings'] = {}
             
-        # Get shorts tags
+        # Update YouTube settings
+        privacy_status = request.form.get('privacy_status', 'private')
+        automation.config['shorts_settings']['privacy_status'] = privacy_status
+        
+        # Update tags
         shorts_tags = request.form.get('shorts_tags', '#shorts, #youtubeshorts')
         automation.config['shorts_settings']['tags'] = shorts_tags
+        
+        # Update notify subscribers setting
+        notify_subscribers = request.form.get('notify_subscribers', 'off') == 'on'
+        automation.config['shorts_settings']['notify_subscribers'] = notify_subscribers
+        
+        # In a real application, you would save these to a config file
+        # For demo purposes, we'll just update them in memory
         
         return jsonify({
             'success': True,
             'message': 'YouTube settings updated successfully'
         })
 
+# API endpoint for saving advanced settings
+@app.route('/settings/advanced', methods=['POST'])
+def save_advanced_settings():
+    if request.method == 'POST':
+        # Get or create API settings in config
+        if 'api_settings' not in automation.config:
+            automation.config['api_settings'] = {}
+            
+        # Update API settings
+        retry_attempts = int(request.form.get('api_retry_attempts', 3))
+        automation.config['api_settings']['retry_attempts'] = retry_attempts
+        
+        # Update preferred model
+        preferred_model = request.form.get('preferred_model', 'gpt-3.5-turbo')
+        automation.config['api_settings']['preferred_model'] = preferred_model
+        
+        # Update API quota
+        api_quota = int(request.form.get('api_quota', 60))
+        automation.config['api_settings']['use_api_quota'] = api_quota / 100.0
+        
+        # Update auto cleanup setting
+        auto_cleanup = request.form.get('auto_cleanup', 'off') == 'on'
+        automation.config['api_settings']['auto_cleanup'] = auto_cleanup
+        
+        # In a real application, you would save these to a config file
+        # For demo purposes, we'll just update them in memory
+        
+        return jsonify({
+            'success': True,
+            'message': 'Advanced settings updated successfully'
+        })
+
+# API endpoint for clearing cache
+@app.route('/settings/clear-cache', methods=['POST'])
+def clear_cache():
+    if request.method == 'POST':
+        # In a real application, you would implement actual cache clearing logic
+        # For demo purposes, we'll just return success
+        
+        return jsonify({
+            'success': True,
+            'message': 'Cache cleared successfully'
+        })
+
+# API endpoint for resetting all settings
+@app.route('/settings/reset', methods=['POST'])
+def reset_settings():
+    if request.method == 'POST':
+        # Reset API keys individually
+        automation.api_keys["openai"] = ""
+        automation.api_keys["elevenlabs"] = ""
+        automation.api_keys["pexels"] = ""
+        automation.api_keys["youtube"] = ""
+        
+        # Reset config to defaults
+        automation.config = {
+            "content_types": ["how_to", "top_10", "explainer"],
+            "video_length": "short",
+            "target_audience": "general",
+            "style": "engaging",
+            "upload_schedule": {
+                "frequency": "daily",
+                "time": "15:00"
+            },
+            "directories": {
+                "scripts": "scripts",
+                "audio": "audio",
+                "video": "video",
+                "thumbnails": "thumbnails",
+                "output": "output",
+                "analytics": "analytics"
+            },
+            "api_settings": {
+                "retry_attempts": 3,
+                "use_api_quota": 0.8,
+                "preferred_model": "gpt-3.5-turbo"
+            },
+            "shorts_mode": True,
+            "shorts_settings": {
+                "enabled": True,
+                "max_duration": 60,
+                "vertical_format": True,
+                "fast_paced": True
+            }
+        }
+        
+        return jsonify({
+            'success': True,
+            'message': 'All settings have been reset to defaults'
+        })
+        
 # Run automation job
 @app.route('/run', methods=['POST'])
 def run_automation():
@@ -1668,11 +658,7 @@ def cancel_job(job_id):
         return jsonify({'success': True})
     return jsonify({'success': False, 'message': 'Job not found'})
 
-# Utility routes
-@app.route('/video/<path:video_path>')
-def serve_video(video_path):
-    return send_from_directory('output', os.path.basename(video_path))
-
+# Video upload endpoint
 @app.route('/upload', methods=['POST'])
 def upload_video():
     try:
@@ -1764,15 +750,19 @@ def upload_video():
             'message': error_msg
         }), 400
 
-# Helper functions
-def mask_api_key(key):
-    """Mask API key for display in settings."""
-    if not key:
-        return ''
-    if len(key) <= 8:
-        return '*' * len(key)
-    return key[:4] + '*' * (len(key) - 8) + key[-4:]
+# Helper function to serve video files
+@app.route('/video/<path:filename>')
+def serve_video(filename):
+    output_dir = automation.config['directories'].get('output', 'output')
+    return send_from_directory(output_dir, filename)
 
+@app.route('/thumbnails/<path:filename>')
+def serve_thumbnail(filename):
+    """Serve thumbnail images."""
+    thumbnail_dir = automation.config['directories'].get('thumbnails', 'thumbnails')
+    return send_from_directory(thumbnail_dir, filename)
+
+# Helper functions for video management
 def get_video_list(shorts_only=False):
     """Get list of videos with option to filter for Shorts only."""
     video_dir = automation.config['directories'].get('output', 'output')
@@ -1862,6 +852,139 @@ def get_video_list(shorts_only=False):
     
     return videos
 
+# Helper functions for analytics data
+def generate_random_views_data(start_date, end_date):
+    """Generate random views data for analytics demo."""
+    start_datetime = datetime.strptime(start_date, '%Y-%m-%d')
+    end_datetime = datetime.strptime(end_date, '%Y-%m-%d')
+    
+    # Generate data points for each day in the range
+    data_points = []
+    current_date = start_datetime
+    base_views = random.randint(500, 1500)
+    trend = random.choice([1.0, 1.1, 1.2])  # Upward trend factor
+    
+    while current_date <= end_datetime:
+        # Calculate views with some randomness and a general upward trend
+        views = int(base_views * (1 + random.uniform(-0.2, 0.3)))
+        base_views = int(base_views * trend)  # Apply trend for next day
+        
+        data_points.append({
+            'date': current_date.strftime('%Y-%m-%d'),
+            'views': views
+        })
+        
+        current_date += timedelta(days=1)
+    
+    return data_points
+
+def get_top_videos(limit=5):
+    """Get top videos for analytics."""
+    videos = get_video_list(shorts_only=True)
+    
+    # Sort by upload date (newest first) for demo purposes
+    videos.sort(key=lambda x: x.get('date', ''), reverse=True)
+    
+    # Take the top N videos
+    top_videos = videos[:limit]
+    
+    # Add random metrics for demo purposes
+    enhanced_videos = []
+    for video in top_videos:
+        views = random.randint(1000, 10000)
+        
+        enhanced_video = video.copy()
+        enhanced_video.update({
+            'views': views,
+            'likes': int(views * random.uniform(0.1, 0.2)),
+            'comments': int(views * random.uniform(0.01, 0.03)),
+            'shares': int(views * random.uniform(0.005, 0.02)),
+            'ctr': f"{random.uniform(5.0, 15.0):.1f}%",
+            'publish_date': video.get('date', '')
+        })
+        
+        enhanced_videos.append(enhanced_video)
+    
+    return enhanced_videos
+
+def generate_random_engagement_data():
+    """Generate random engagement data for analytics demo."""
+    return {
+        'likes': random.randint(2000, 5000),
+        'comments': random.randint(400, 1000),
+        'shares': random.randint(200, 600),
+        'saves': random.randint(100, 400),
+        'subscribes': random.randint(100, 300)
+    }
+
+def generate_random_demographics_data():
+    """Generate random demographics data for analytics demo."""
+    return {
+        'age_groups': ['18-24', '25-34', '35-44', '45-54', '55-64', '65+'],
+        'male': [random.randint(20, 35), random.randint(25, 40), random.randint(10, 20), 
+                random.randint(5, 15), random.randint(2, 8), random.randint(1, 5)],
+        'female': [random.randint(20, 35), random.randint(25, 40), random.randint(10, 20), 
+                  random.randint(5, 15), random.randint(2, 8), random.randint(1, 5)],
+        'other': [random.randint(2, 8), random.randint(5, 10), random.randint(2, 5), 
+                 random.randint(1, 3), random.randint(0, 2), random.randint(0, 1)]
+    }
+
+def generate_random_geographic_data():
+    """Generate random geographic data for analytics demo."""
+    countries = ['United States', 'India', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'Other']
+    percentages = []
+    
+    # Generate random percentages that add up to 100%
+    remaining = 100
+    for i in range(len(countries) - 1):
+        value = random.randint(5, min(50, remaining - 5))
+        percentages.append(value)
+        remaining -= value
+    
+    percentages.append(remaining)
+    
+    return {
+        'countries': countries,
+        'percentages': percentages
+    }
+
+def generate_random_device_data():
+    """Generate random device data for analytics demo."""
+    # Generate random percentages that add up to 100%
+    mobile = random.randint(60, 85)
+    tablet = random.randint(5, 15)
+    desktop = random.randint(5, 20)
+    tv = random.randint(1, 3)
+    other = 100 - (mobile + tablet + desktop + tv)
+    
+    return {
+        'devices': ['Mobile', 'Tablet', 'Desktop', 'TV', 'Other'],
+        'percentages': [mobile, tablet, desktop, tv, other]
+    }
+
+def generate_random_performance_data():
+    """Generate random performance data for analytics demo."""
+    video_count = 8
+    videos = [f"Video {i+1}" for i in range(video_count)]
+    views = [random.randint(1000, 5000) for _ in range(video_count)]
+    engagement_rates = [random.uniform(5.0, 15.0) for _ in range(video_count)]
+    
+    return {
+        'videos': videos,
+        'views': views,
+        'engagement_rates': engagement_rates
+    }
+
+# Helper functions for settings
+def mask_api_key(key):
+    """Mask API key for display in settings."""
+    if not key:
+        return ''
+    if len(key) <= 8:
+        return '*' * len(key)
+    return key[:4] + '*' * (len(key) - 8) + key[-4:]
+
+# Date helper functions
 def is_today(date_str):
     """Check if date is today."""
     try:
@@ -1951,12 +1074,311 @@ def run_automation_job(job_id, niche, count):
             if job_id in current_jobs:
                 del current_jobs[job_id]
 
-@app.route('/thumbnails/<path:filename>')
-def serve_thumbnail(filename):
-    """Serve thumbnail images."""
-    thumbnail_dir = automation.config['directories'].get('thumbnails', 'thumbnails')
-    return send_from_directory(thumbnail_dir, filename)
+# Add additional CSS for modals, charts, etc.
+@app.route('/static/css/additional.css')
+def serve_additional_css():
+    return """
+/* Modal Styles */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
 
+.modal-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal {
+    background-color: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+}
+
+.modal-backdrop.active .modal {
+    transform: translateY(0);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-title {
+    font-weight: 600;
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-color);
+    opacity: 0.7;
+    transition: opacity 0.2s;
+}
+
+.modal-close:hover {
+    opacity: 1;
+}
+
+.modal-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.modal-footer {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+/* Detail view for My Shorts page */
+.detailed-view .video-item {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    height: auto;
+}
+
+.detailed-view .video-thumbnail {
+    height: 320px;
+}
+
+.detailed-view .video-info {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.detailed-view .video-details {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    font-size: 0.8rem;
+    color: #777;
+    margin-bottom: 0.3rem;
+}
+
+.detail-value {
+    font-weight: 500;
+}
+
+.view-toggle {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+.view-toggle button {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.view-toggle button:hover,
+.view-toggle button.active {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+/* Search box styles */
+.search-box {
+    flex-grow: 1;
+    display: flex;
+    max-width: 400px;
+}
+
+.search-box input {
+    flex-grow: 1;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: none;
+}
+
+.search-box button {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* Checkbox styles for video selection */
+.video-item .checkbox-container {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+    background-color: rgba(0,0,0,0.5);
+    border-radius: 4px;
+    padding: 5px;
+}
+
+/* Filter bar */
+.filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+}
+
+.filter-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Analytics styles */
+.chart-container {
+    width: 100%;
+    height: 300px;
+    margin-bottom: 1.5rem;
+}
+
+.date-range-picker {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.date-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.range-presets {
+    display: flex;
+    gap: 0.5rem;
+    margin-left: auto;
+}
+
+/* Tab navigation */
+.tab-container {
+    margin-bottom: 2rem;
+}
+
+.tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.tab {
+    padding: 0.8rem 1.5rem;
+    cursor: pointer;
+    position: relative;
+    font-weight: 500;
+}
+
+.tab.active {
+    color: var(--primary-color);
+}
+
+.tab.active:after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background-color: var(--primary-color);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Settings styles */
+.settings-card {
+    margin-bottom: 2rem;
+}
+
+.settings-heading {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    gap: 0.5rem;
+}
+
+.settings-heading h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+.api-key-input {
+    font-family: monospace;
+    letter-spacing: 1px;
+}
+
+.api-status {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.api-status.active {
+    background-color: var(--success-color);
+}
+
+.api-status.inactive {
+    background-color: var(--danger-color);
+}
+    """
+
+# Main execution
 if __name__ == '__main__':
     try:
         print("Starting YouTube Shorts Automation Web Interface")
