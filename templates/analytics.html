@@ -274,6 +274,50 @@
           max-width: 200px;
         }
       }
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 60px;
+        height: 28px;
+      }
+
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .toggle-label {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 34px;
+      }
+
+      .toggle-label:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+      }
+
+      input:checked + .toggle-label {
+        background-color: var(--primary-color);
+      }
+
+      input:checked + .toggle-label:before {
+        transform: translateX(32px);
+      }
     </style>
   </head>
   <body>
@@ -326,6 +370,21 @@
         <button id="update-analytics" class="btn btn-primary">
           <i class="fas fa-sync-alt"></i> Update
         </button>
+      </div>
+
+      <div
+        class="data-source-toggle"
+        style="margin-left: 20px; display: flex; align-items: center; gap: 10px"
+      >
+        <span>Data Source:</span>
+        <div class="toggle-switch">
+          <input type="checkbox" id="data-source-toggle" />
+          <label for="data-source-toggle" class="toggle-label">
+            <span class="toggle-inner"></span>
+            <span class="toggle-switch"></span>
+          </label>
+        </div>
+        <span id="data-source-label">Sample Data</span>
       </div>
 
       <div class="tab-container">
@@ -650,20 +709,59 @@
             );
           });
 
-        // Function to load data for a specific tab
+        // Data source toggle functionality
+        const dataSourceToggle = document.getElementById("data-source-toggle");
+        const dataSourceLabel = document.getElementById("data-source-label");
+
+        // Load saved preference
+        const useRealData = localStorage.getItem("useRealData") === "true";
+        dataSourceToggle.checked = useRealData;
+        dataSourceLabel.textContent = useRealData
+          ? "YouTube API"
+          : "Sample Data";
+
+        // Toggle event listener
+        dataSourceToggle.addEventListener("change", function () {
+          const useRealData = this.checked;
+          localStorage.setItem("useRealData", useRealData);
+          dataSourceLabel.textContent = useRealData
+            ? "YouTube API"
+            : "Sample Data";
+
+          // Reload data with new source
+          loadAllData();
+
+          showToast(
+            "info",
+            "Data Source Changed",
+            `Switched to ${useRealData ? "YouTube API data" : "sample data"}.`
+          );
+        });
+
+        // Update loadAllData and other data loading functions
+        function loadAllData() {
+          const useRealData = dataSourceToggle.checked;
+          loadOverviewData(useRealData);
+          loadEngagementData(useRealData);
+          loadAudienceData(useRealData);
+          loadPerformanceData(useRealData);
+        }
+
+        // Modify the tab data loading function
         function loadTabData(tabId) {
+          const useRealData = dataSourceToggle.checked;
           switch (tabId) {
             case "overview":
-              loadOverviewData();
+              loadOverviewData(useRealData);
               break;
             case "engagement":
-              loadEngagementData();
+              loadEngagementData(useRealData);
               break;
             case "audience":
-              loadAudienceData();
+              loadAudienceData(useRealData);
               break;
             case "performance":
-              loadPerformanceData();
+              loadPerformanceData(useRealData);
               break;
           }
         }
@@ -677,55 +775,109 @@
         }
 
         // Load overview data
-        function loadOverviewData() {
+        function loadOverviewData(useRealData = false) {
           const startDate = document.getElementById("start-date").value;
           const endDate = document.getElementById("end-date").value;
 
-          // Simulate API request with loading state
+          // Show loading states
           document.getElementById("views-chart").innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Loading chart data...</p>
-                    </div>
-                `;
+              <div class="empty-state">
+                  <i class="fas fa-spinner fa-spin"></i>
+                  <p>Loading chart data...</p>
+              </div>
+          `;
 
           document.getElementById("top-videos-body").innerHTML = `
-                    <tr>
-                        <td colspan="6">
-                            <div class="empty-state">
-                                <i class="fas fa-spinner fa-spin"></i>
-                                <p>Loading top videos data...</p>
-                            </div>
-                        </td>
-                    </tr>
-                `;
+              <tr>
+                  <td colspan="6">
+                      <div class="empty-state">
+                          <i class="fas fa-spinner fa-spin"></i>
+                          <p>Loading top videos data...</p>
+                      </div>
+                  </td>
+              </tr>
+          `;
 
           document.getElementById("insights-container").innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-spinner fa-spin"></i>
-                        <p>Analyzing your data for insights...</p>
-                    </div>
-                `;
+              <div class="empty-state">
+                  <i class="fas fa-spinner fa-spin"></i>
+                  <p>Analyzing your data for insights...</p>
+              </div>
+          `;
 
-          // Simulate data loading delay
-          setTimeout(() => {
-            // Update KPIs
-            document.getElementById("total-views").textContent = "15,743";
-            document.getElementById("total-likes").textContent = "2,891";
-            document.getElementById("total-comments").textContent = "584";
-            document.getElementById("total-shares").textContent = "326";
-            document.getElementById("new-subscribers").textContent = "147";
-            document.getElementById("watch-time").textContent = "329";
+          if (useRealData) {
+            // Fetch real data from YouTube API
+            fetch(
+              `/api/analytics?start_date=${startDate}&end_date=${endDate}&use_real_data=true`
+            )
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  // Update KPIs with real data
+                  document.getElementById("total-views").textContent =
+                    formatNumber(data.summary.total_views || 0);
+                  document.getElementById("total-likes").textContent =
+                    formatNumber(data.summary.total_likes || 0);
+                  document.getElementById("total-comments").textContent =
+                    formatNumber(data.summary.total_comments || 0);
+                  document.getElementById("total-shares").textContent =
+                    formatNumber(data.summary.total_shares || 0);
+                  document.getElementById("new-subscribers").textContent =
+                    formatNumber(data.summary.new_subscribers || 0);
+                  document.getElementById("watch-time").textContent =
+                    formatNumber(data.summary.watch_time || 0);
 
-            // Create views chart
-            createViewsChart();
+                  // Create charts with real data
+                  createViewsChartWithData(data.views_data);
+                  createTopVideosTableWithData(data.top_videos);
+                  createInsightsWithData(data.insights || []);
+                } else {
+                  showToast(
+                    "error",
+                    "API Error",
+                    data.message || "Failed to fetch YouTube analytics data."
+                  );
+                  // Fall back to sample data
+                  loadSampleData();
+                }
+              })
+              .catch((error) => {
+                console.error("Error fetching analytics:", error);
+                showToast(
+                  "error",
+                  "Connection Error",
+                  "Failed to connect to YouTube API. Using sample data instead."
+                );
+                // Fall back to sample data
+                loadSampleData();
+              });
+          } else {
+            // Use sample data
+            loadSampleData();
+          }
 
-            // Create top videos table
-            createTopVideosTable();
+          // Helper function to load sample data
+          function loadSampleData() {
+            setTimeout(() => {
+              // Update KPIs with sample data
+              document.getElementById("total-views").textContent = "15,743";
+              document.getElementById("total-likes").textContent = "2,891";
+              document.getElementById("total-comments").textContent = "584";
+              document.getElementById("total-shares").textContent = "326";
+              document.getElementById("new-subscribers").textContent = "147";
+              document.getElementById("watch-time").textContent = "329";
 
-            // Create insights
-            createInsights();
-          }, 1000);
+              // Create charts with sample data
+              createViewsChart();
+              createTopVideosTable();
+              createInsights();
+            }, 1000);
+          }
+
+          // Helper function to format numbers
+          function formatNumber(num) {
+            return new Intl.NumberFormat().format(num);
+          }
         }
 
         // Load engagement data
@@ -1477,6 +1629,106 @@
         // Load initial data
         loadOverviewData();
       });
+
+      function createViewsChartWithData(viewsData) {
+        const ctx = document.createElement("canvas");
+        document.getElementById("views-chart").innerHTML = "";
+        document.getElementById("views-chart").appendChild(ctx);
+
+        // Extract dates and views from the data
+        const labels = viewsData.map((item) => item.date);
+        const views = viewsData.map((item) => item.views);
+
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Views",
+                data: views,
+                borderColor: "#FF0000",
+                backgroundColor: "rgba(255, 0, 0, 0.1)",
+                fill: true,
+                tension: 0.3,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false,
+              },
+              tooltip: {
+                mode: "index",
+                intersect: false,
+              },
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function (value) {
+                    if (value >= 1000) {
+                      return value / 1000 + "k";
+                    }
+                    return value;
+                  },
+                },
+              },
+            },
+          },
+        });
+      }
+
+      function createTopVideosTableWithData(topVideos) {
+        const tableBody = document.getElementById("top-videos-body");
+        tableBody.innerHTML = "";
+
+        if (!topVideos || topVideos.length === 0) {
+          tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="fas fa-info-circle"></i>
+                            <p>No videos data available for the selected period.</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+          return;
+        }
+
+        // Create rows for each video
+        topVideos.forEach((video) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+                <td>
+                    <div class="video-title-cell">
+                        <img src="${
+                          video.thumbnail ||
+                          "/static/images/placeholder_vertical.jpg"
+                        }" 
+                             alt="${video.title}" class="video-thumbnail-small"
+                             onerror="this.onerror=null; this.src='/static/images/placeholder_vertical.jpg';">
+                        <div class="video-title-small">${video.title}</div>
+                    </div>
+                </td>
+                <td>${video.publish_date}</td>
+                <td>${formatNumber(video.views)}</td>
+                <td>${formatNumber(video.likes)}</td>
+                <td>${formatNumber(video.comments)}</td>
+                <td>${video.ctr || "0%"}</td>
+            `;
+          tableBody.appendChild(row);
+        });
+
+        function formatNumber(num) {
+          return new Intl.NumberFormat().format(num);
+        }
+      }
     </script>
   </body>
 </html>

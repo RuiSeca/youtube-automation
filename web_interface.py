@@ -6,6 +6,7 @@ using Flask. It features a modern responsive design optimized for quick short-fo
 """
 
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, session, send_from_directory
+from flask_wtf.csrf import CSRFProtect
 import os
 import json
 import threading
@@ -29,7 +30,8 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = secrets.token_hex(16)  # Generate a secure random key
+app.config['SECRET_KEY'] = secrets.token_hex(16)  # You already have this line
+csrf = CSRFProtect(app)
 
 # YouTube API Settings
 YOUTUBE_CLIENT_SECRETS_FILE = "client_secrets.json"
@@ -403,6 +405,7 @@ def delete_video(video_id):
 def api_analytics():
     start_date = request.args.get('start_date', None)
     end_date = request.args.get('end_date', None)
+    use_real_data = request.args.get('use_real_data', 'false').lower() == 'true'
     
     # If no dates provided, default to last 30 days
     if not start_date:
@@ -411,32 +414,126 @@ def api_analytics():
         start_date = start_datetime.strftime('%Y-%m-%d')
         end_date = end_datetime.strftime('%Y-%m-%d')
     
-    # Get analytics data
-    # For demo purposes, we'll generate random data
-    views_data = generate_random_views_data(start_date, end_date)
-    top_videos = get_top_videos(5)  # Get top 5 videos
-    engagement_data = generate_random_engagement_data()
-    demographics_data = generate_random_demographics_data()
-    geographic_data = generate_random_geographic_data()
-    device_data = generate_random_device_data()
-    performance_data = generate_random_performance_data()
+    if use_real_data:
+        # Try to get real data from YouTube API
+        try:
+            # Get YouTube credentials
+            credentials = get_youtube_credentials()
+            if not credentials:
+                return jsonify({
+                    'success': False,
+                    'message': 'Not authenticated with YouTube. Please connect your channel in Settings.'
+                })
+            
+            # Build the YouTube API clients
+            youtube = build(YOUTUBE_API_SERVICE_NAME, YOUTUBE_API_VERSION, credentials=credentials)
+            youtube_analytics = build('youtubeAnalytics', 'v2', credentials=credentials)
+            
+            # Get channel ID
+            channels_response = youtube.channels().list(
+                part="id",
+                mine=True
+            ).execute()
+            
+            if not channels_response["items"]:
+                return jsonify({
+                    'success': False,
+                    'message': 'No YouTube channel found for this account.'
+                })
+            
+            channel_id = channels_response["items"][0]["id"]
+            
+            # Get analytics data
+            analytics_response = youtube_analytics.reports().query(
+                ids=f'channel=={channel_id}',
+                startDate=start_date,
+                endDate=end_date,
+                metrics='views,likes,comments,shares,subscribersGained',
+                dimensions='day',
+                sort='day'
+            ).execute()
+            
+            # Format views data
+            views_data = []
+            if 'rows' in analytics_response:
+                for row in analytics_response['rows']:
+                    views_data.append({
+                        'date': row[0],
+                        'views': row[1]
+                    })
+            
+            # Get top videos
+            top_videos_response = youtube_analytics.reports().query(
+                ids=f'channel=={channel_id}',
+                startDate=start_date,
+                endDate=end_date,
+                metrics='views,likes,comments,shares',
+                dimensions='video',
+                sort='-views',
+                maxResults=5
+            ).execute()
+            
+            top_videos = []
+            if 'rows' in top_videos_response:
+                video_ids = [row[0] for row in top_videos_response['rows']]
+                
+                if video_ids:
+                    videos_response = youtube.videos().list(
+                        part="snippet,statistics",
+                        id=','.join(video_ids)
+                    ).execute()
+                    
+                    video_data = {item['id']: item for item in videos_response.get('items', [])}
+                    
+                    for row in top_videos_response['rows']:
+                        video_id = row[0]
+                        if video_id in video_data:
+                            video = video_data[video_id]
+                            thumbnail = video['snippet']['thumbnails'].get('maxres') or \
+                                      video['snippet']['thumbnails'].get('high') or \
+                                      video['snippet']['thumbnails'].get('default')
+                            
+                            top_videos.append({
+                                'id': video_id,
+                                'title': video['snippet']['title'],
+                                'views': row[1],
+                                'likes': row[2],
+                                'comments': row[3],
+                                'shares': row[4] if len(row) > 4 else 0,
+                                'thumbnail': thumbnail['url'],
+                                'publish_date': video['snippet']['publishedAt'],
+                                'ctr': f"{(row[2] / row[1] * 100):.1f}%" if row[1] > 0 else "0%",
+                            })
+            
+            # Calculate summary stats
+            total_views = sum(item['views'] for item in views_data) if views_data else 0
+            total_likes = sum(video['likes'] for video in top_videos) if top_videos else 0
+            total_comments = sum(video['comments'] for video in top_videos) if top_videos else 0
+            total_shares = sum(video.get('shares', 0) for video in top_videos) if top_videos else 0
+            
+            return jsonify({
+                'success': True,
+                'views_data': views_data,
+                'top_videos': top_videos,
+                'summary': {
+                    'total_views': total_views,
+                    'total_likes': total_likes,
+                    'total_comments': total_comments,
+                    'total_shares': total_shares,
+                    'new_subscribers': 0,  # YouTube API doesn't provide this directly
+                    'watch_time': int(total_views * 0.02)  # Rough estimate
+                }
+            })
+        
+        except Exception as e:
+            print(f"Error fetching YouTube analytics: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': f'Error fetching YouTube analytics: {str(e)}'
+            })
     
-    return jsonify({
-        'success': True,
-        'views_data': views_data,
-        'top_videos': top_videos,
-        'engagement_data': engagement_data,
-        'demographics_data': demographics_data,
-        'geographic_data': geographic_data,
-        'device_data': device_data,
-        'performance_data': performance_data,
-        'summary': {
-            'total_views': sum(point['views'] for point in views_data),
-            'total_likes': random.randint(1000, 5000),
-            'total_comments': random.randint(100, 1000),
-            'total_shares': random.randint(50, 500)
-        }
-    })
+    # Use mock data
+    return get_mock_analytics_data(start_date, end_date)
 
 # API endpoint for saving API keys
 @app.route('/settings/api-keys', methods=['POST'])
@@ -1297,6 +1394,25 @@ def generate_random_demographics_data():
                  random.randint(1, 3), random.randint(0, 2), random.randint(0, 1)]
     }
 
+def get_mock_analytics_data(start_date, end_date):
+    """Generate mock analytics data for demo purposes."""
+    views_data = generate_random_views_data(start_date, end_date)
+    top_videos = get_top_videos(5)
+    
+    return jsonify({
+        'success': True,
+        'views_data': views_data,
+        'top_videos': top_videos,
+        'summary': {
+            'total_views': sum(point['views'] for point in views_data),
+            'total_likes': random.randint(1000, 5000),
+            'total_comments': random.randint(100, 1000),
+            'total_shares': random.randint(50, 500),
+            'new_subscribers': random.randint(50, 200),
+            'watch_time': random.randint(200, 500)
+        }
+    })
+    
 def generate_random_geographic_data():
     """Generate random geographic data for analytics demo."""
     countries = ['United States', 'India', 'United Kingdom', 'Canada', 'Australia', 'Germany', 'Other']
