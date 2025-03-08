@@ -196,5 +196,117 @@
     <div id="toast-container" class="toast-container"></div>
 
     <script src="/static/js/shorts_main.js"></script>
+    <!-- Updated Video Gallery Section with Proper Thumbnail Handling -->
+    <div id="shortsGallery" class="video-gallery">
+      <div class="empty-state">
+        <i class="fas fa-video"></i>
+        <p>
+          No Shorts generated yet. Start creating content to see your Shorts
+          here.
+        </p>
+      </div>
+    </div>
+
+    <script>
+      // Modified JavaScript for handling thumbnails properly
+      function updateDashboard() {
+        fetch("/status")
+          .then((response) => response.json())
+          .then((data) => {
+            // Update other elements...
+
+            // Update shorts gallery with improved thumbnail handling
+            const shortsGallery = document.getElementById("shortsGallery");
+            if (shortsGallery) {
+              if (data.videos && data.videos.length > 0) {
+                let shortsHTML = "";
+                data.videos.forEach((video) => {
+                  // Check if thumbnail exists, use absolute URL if it starts with /
+                  let thumbnailUrl =
+                    video.thumbnail ||
+                    "/static/images/placeholder_vertical.jpg";
+
+                  shortsHTML += `
+                <div class="video-item">
+                  <div class="video-thumbnail">
+                    <div class="shorts-badge">#SHORTS</div>
+                    <img src="${thumbnailUrl}" 
+                      alt="${video.title}" 
+                      onerror="this.onerror=null; this.src='/static/images/placeholder_vertical.jpg';">
+                    <a href="#" class="play-button" data-video-path="${
+                      video.path
+                    }" data-video-title="${video.title}"></a>
+                  </div>
+                  <div class="video-info">
+                    <h3 class="video-title">${video.title}</h3>
+                    <div class="video-meta">
+                      <span><i class="far fa-calendar-alt"></i> ${
+                        video.date
+                      }</span>
+                      <span class="badge badge-${
+                        video.uploaded ? "success" : "warning"
+                      }">${video.uploaded ? "Uploaded" : "Local"}</span>
+                    </div>
+                    <div class="video-options">
+                      <button class="btn btn-sm btn-outline preview-video" data-video-path="${
+                        video.path
+                      }" data-video-title="${video.title}">
+                        <i class="fas fa-play"></i> Preview
+                      </button>
+                      ${
+                        !video.uploaded
+                          ? `
+                      <button class="btn btn-sm btn-primary upload-video" data-video-path="${video.path}" data-video-title="${video.title}">
+                        <i class="fas fa-upload"></i> Upload
+                      </button>
+                      `
+                          : ""
+                      }
+                    </div>
+                  </div>
+                </div>
+              `;
+                });
+                shortsGallery.innerHTML = shortsHTML;
+
+                // Add event listeners
+                document
+                  .querySelectorAll(".preview-video, .play-button")
+                  .forEach((btn) => {
+                    btn.addEventListener("click", (e) => {
+                      e.preventDefault();
+                      const videoPath = btn.getAttribute("data-video-path");
+                      const videoTitle = btn.getAttribute("data-video-title");
+                      openVideoModal(videoPath, videoTitle);
+                    });
+                  });
+
+                document.querySelectorAll(".upload-video").forEach((btn) => {
+                  btn.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const videoPath = btn.getAttribute("data-video-path");
+                    const videoTitle = btn.getAttribute("data-video-title");
+                    if (
+                      confirm(
+                        `Are you sure you want to upload "${videoTitle}" to YouTube as a Short?`
+                      )
+                    ) {
+                      uploadVideo(videoPath, videoTitle);
+                    }
+                  });
+                });
+              } else {
+                shortsGallery.innerHTML = `
+              <div class="empty-state">
+                <i class="fas fa-video"></i>
+                <p>No Shorts generated yet. Start creating content to see your Shorts here.</p>
+              </div>
+            `;
+              }
+            }
+          })
+          .catch((error) => console.error("Error fetching status:", error));
+      }
+    </script>
   </body>
 </html>

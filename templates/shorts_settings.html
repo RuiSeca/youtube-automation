@@ -263,77 +263,96 @@
                 <div class="tab-content active" id="api-keys-tab">
                     <div class="settings-card">
                         <div class="settings-heading">
-                            <i class="fas fa-key"></i>
-                            <h3>API Key Configuration</h3>
+                            <i class="fab fa-youtube"></i>
+                            <h3>YouTube Integration</h3>
                         </div>
                         
-                        <p>Configure your API keys to enable all features of the YouTube Shorts Automation system. These keys are used to interact with various services for content generation, voice narration, stock footage, and YouTube uploads.</p>
+                        <p>Configure your YouTube channel integration for automated Shorts uploads and analytics.</p>
                         
-                        <form id="api-keys-form" action="/settings/api-keys" method="post">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            
-                            <div class="form-group">
-                                <label for="openai_api_key">
-                                    <span class="api-status {{ 'active' if api_keys.openai else 'inactive' }}"></span>
-                                    OpenAI API Key:
-                                </label>
-                                <div class="field-with-icon">
-                                    <input type="password" id="openai_api_key" name="openai_api_key" class="form-control api-key-input" value="{{ api_keys.openai }}" placeholder="Enter your OpenAI API key">
-                                    <span class="field-icon toggle-password" data-target="openai_api_key">
-                                        <i class="fas fa-eye"></i>
-                                    </span>
+                        <div id="youtube-connection-status">
+                            <div class="loading-spinner">
+                                <i class="fas fa-spinner fa-spin"></i> Checking YouTube connection...
+                            </div>
+                        </div>
+                        
+                        <div id="youtube-not-connected" style="display: none;">
+                            <!-- Connect YouTube Channel -->
+                            <div class="connect-youtube">
+                                <div class="connect-icon">
+                                    <i class="fab fa-youtube"></i>
                                 </div>
-                                <div class="setting-help">Used for content ideas, script generation, and thumbnail descriptions</div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="elevenlabs_api_key">
-                                    <span class="api-status {{ 'active' if api_keys.elevenlabs else 'inactive' }}"></span>
-                                    ElevenLabs API Key:
-                                </label>
-                                <div class="field-with-icon">
-                                    <input type="password" id="elevenlabs_api_key" name="elevenlabs_api_key" class="form-control api-key-input" value="{{ api_keys.elevenlabs }}" placeholder="Enter your ElevenLabs API key">
-                                    <span class="field-icon toggle-password" data-target="elevenlabs_api_key">
-                                        <i class="fas fa-eye"></i>
-                                    </span>
+                                <div class="connect-content">
+                                    <div class="connect-title">Connect YouTube Channel</div>
+                                    <div class="connect-description">Connect your YouTube channel to enable automatic uploads and access analytics data.</div>
+                                    <a href="/youtube/connect" class="btn btn-primary">
+                                        <i class="fas fa-plug"></i> Connect Channel
+                                    </a>
                                 </div>
-                                <div class="setting-help">Used for generating high-quality voice narration</div>
                             </div>
-                            
-                            <div class="form-group">
-                                <label for="pexels_api_key">
-                                    <span class="api-status {{ 'active' if api_keys.pexels else 'inactive' }}"></span>
-                                    Pexels API Key:
-                                </label>
-                                <div class="field-with-icon">
-                                    <input type="password" id="pexels_api_key" name="pexels_api_key" class="form-control api-key-input" value="{{ api_keys.pexels }}" placeholder="Enter your Pexels API key">
-                                    <span class="field-icon toggle-password" data-target="pexels_api_key">
-                                        <i class="fas fa-eye"></i>
-                                    </span>
+                        </div>
+                        
+                        <div id="youtube-connected" style="display: none;">
+                            <!-- Connected Channel Info -->
+                            <div class="youtube-channel">
+                                <img id="channel-avatar" src="/static/images/placeholder.jpg" alt="Channel Avatar" class="channel-avatar">
+                                <div class="channel-info">
+                                    <div id="channel-name" class="channel-name">Your Channel</div>
+                                    <div class="channel-stats">
+                                        <div class="channel-stat">
+                                            <i class="fas fa-users"></i>
+                                            <span id="subscriber-count">0</span> subscribers
+                                        </div>
+                                        <div class="channel-stat">
+                                            <i class="fas fa-film"></i>
+                                            <span id="video-count">0</span> videos
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="setting-help">Used for searching and downloading stock footage</div>
+                                <a href="/youtube/connect" class="btn btn-sm btn-outline">
+                                    <i class="fas fa-cog"></i> Manage
+                                </a>
                             </div>
                             
-                            <div class="form-group">
-                                <label for="youtube_api_key">
-                                    <span class="api-status {{ 'active' if api_keys.youtube else 'inactive' }}"></span>
-                                    YouTube API Key:
-                                </label>
-                                <div class="field-with-icon">
-                                    <input type="password" id="youtube_api_key" name="youtube_api_key" class="form-control api-key-input" value="{{ api_keys.youtube }}" placeholder="Enter your YouTube API key">
-                                    <span class="field-icon toggle-password" data-target="youtube_api_key">
-                                        <i class="fas fa-eye"></i>
-                                    </span>
+                            <div class="settings-section-title">YouTube Shorts Settings</div>
+                            
+                            <form id="youtube-settings-form" action="/settings/youtube" method="post">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                
+                                <div class="form-group">
+                                    <label for="privacy_status">Default Privacy Status:</label>
+                                    <select id="privacy_status" name="privacy_status" class="form-control">
+                                        <option value="private">Private (only you can view)</option>
+                                        <option value="unlisted">Unlisted (anyone with the link can view)</option>
+                                        <option value="public">Public (visible to everyone)</option>
+                                    </select>
+                                    <div class="setting-help">Uploaded Shorts will have this privacy status by default</div>
                                 </div>
-                                <div class="setting-help">Used for YouTube uploads and analytics (requires YouTube Data API v3)</div>
-                            </div>
-                            
-                            <div class="form-group mt-3">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Save API Keys
-                                </button>
-                            </div>
-                        </form>
+                                
+                                <div class="form-group">
+                                    <label for="shorts_tags">Default Tags:</label>
+                                    <input type="text" id="shorts_tags" name="shorts_tags" class="form-control tags-input" placeholder="Add tags (comma-separated)" value="shorts, YouTubeShorts">
+                                    <div class="tags-container" id="tags-container">
+                                        <!-- Tags will be added here dynamically -->
+                                    </div>
+                                    <div class="setting-help">Always include these tags with your Shorts uploads</div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Notify Subscribers:</label>
+                                    <div class="checkbox-group">
+                                        <input type="checkbox" id="notify_subscribers" name="notify_subscribers">
+                                        <label for="notify_subscribers">Notify subscribers when public Shorts are uploaded</label>
+                                    </div>
+                                    <div class="setting-help">Only applies to publicly visible Shorts</div>
+                                </div>
+                                
+                                <div class="form-group mt-3">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save"></i> Save YouTube Settings
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
                 
@@ -857,6 +876,90 @@
                 }
             }
         });
+
+        // Add this script to check YouTube connection status
+        document.addEventListener('DOMContentLoaded', function() {
+            // Function to check YouTube connection status
+            function checkYouTubeConnection() {
+                fetch('/api/youtube/channel')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.channel) {
+                            // Update connection status
+                            document.getElementById('youtube-connection-status').innerHTML = `
+                                <div class="alert alert-success mb-3">
+                                    <div class="alert-icon"><i class="fas fa-check-circle"></i></div>
+                                    <div class="alert-content">
+                                        <div class="alert-message">Connected to YouTube as <strong>${data.channel.title}</strong></div>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // Update channel info
+                            document.getElementById('channel-name').textContent = data.channel.title;
+                            document.getElementById('subscriber-count').textContent = formatNumber(data.channel.subscriberCount);
+                            document.getElementById('video-count').textContent = formatNumber(data.channel.videoCount);
+                            
+                            // Update avatar if available
+                            if (data.channel.thumbnail) {
+                                document.getElementById('channel-avatar').src = data.channel.thumbnail;
+                            }
+                            
+                            // Show connected section
+                            document.getElementById('youtube-connected').style.display = 'block';
+                            document.getElementById('youtube-not-connected').style.display = 'none';
+                        } else {
+                            // Show not connected message
+                            document.getElementById('youtube-connection-status').innerHTML = `
+                                <div class="alert alert-warning mb-3">
+                                    <div class="alert-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                                    <div class="alert-content">
+                                        <div class="alert-message">Not connected to YouTube. Please connect your channel.</div>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // Show not connected section
+                            document.getElementById('youtube-connected').style.display = 'none';
+                            document.getElementById('youtube-not-connected').style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error checking YouTube connection:', error);
+                        
+                        // Show error message
+                        document.getElementById('youtube-connection-status').innerHTML = `
+                            <div class="alert alert-error mb-3">
+                                <div class="alert-icon"><i class="fas fa-exclamation-circle"></i></div>
+                                <div class="alert-content">
+                                    <div class="alert-message">Error checking YouTube connection. Please try again.</div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Show not connected section
+                        document.getElementById('youtube-connected').style.display = 'none';
+                        document.getElementById('youtube-not-connected').style.display = 'block';
+                    });
+            }
+    
+                // Function to format numbers
+                function formatNumber(num) {
+                    if (!num) return '0';
+                    
+                    num = parseInt(num);
+                    if (num >= 1000000) {
+                        return (num / 1000000).toFixed(1) + 'M';
+                    } else if (num >= 1000) {
+                        return (num / 1000).toFixed(1) + 'K';
+                    } else {
+                        return num.toString();
+                    }
+                }
+                
+                // Check YouTube connection on page load
+                checkYouTubeConnection();
+});
     </script>
 </body>
 </html>

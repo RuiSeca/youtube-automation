@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+  <head>
+    <title>YouTube Connection - Shorts Automation</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/static/css/shorts_style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="header">
+      <button id="mobile-menu-btn" class="mobile-menu-btn">
+        <i class="fas fa-bars"></i>
+      </button>
+      <h1>
+        <i class="fab fa-youtube logo-icon"></i> YouTube Shorts Automation
+      </h1>
+      <div class="nav-links" id="nav-links">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/shorts" class="nav-link">My Shorts</a>
+        <a href="/analytics" class="nav-link">Analytics</a>
+        <a href="/settings" class="nav-link active">Settings</a>
+      </div>
+      <div class="theme-toggle d-flex align-center">
+        <label class="theme-switch">
+          <input type="checkbox" id="theme-toggle" />
+          <span class="slider"></span>
+        </label>
+        <span id="theme-label" class="ml-1">Dark Mode</span>
+      </div>
+    </div>
+
+    <div class="container">
+      <div class="card">
+        <h2>
+          <i class="fab fa-youtube section-icon"></i> YouTube Channel
+          Authentication
+        </h2>
+
+        <div id="connection-status" class="mb-3">
+          <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i> Checking YouTube connection
+            status...
+          </div>
+        </div>
+
+        <div id="not-connected-section" style="display: none">
+          <div class="connect-youtube mb-3">
+            <div class="connect-icon">
+              <i class="fab fa-youtube"></i>
+            </div>
+            <div class="connect-content">
+              <div class="connect-title">Connect Your YouTube Channel</div>
+              <div class="connect-description">
+                You need to connect your YouTube channel to enable uploading
+                videos and accessing analytics data. This is a one-time setup
+                process.
+              </div>
+              <button class="btn btn-primary" id="connect-youtube-btn">
+                <i class="fas fa-plug"></i> Connect Channel
+              </button>
+            </div>
+          </div>
+
+          <div class="alert alert-info">
+            <div class="alert-icon"><i class="fas fa-info-circle"></i></div>
+            <div class="alert-content">
+              <div class="alert-title">Why connect your YouTube account?</div>
+              <div class="alert-message">
+                <p>Connecting your YouTube account enables:</p>
+                <ul>
+                  <li>Automatic uploading of created Shorts</li>
+                  <li>Access to your channel's analytics</li>
+                  <li>View performance metrics of your Shorts</li>
+                  <li>Manage your uploaded videos</li>
+                </ul>
+                <p>
+                  Your credentials are stored locally and securely on your
+                  computer.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="connected-section" style="display: none">
+          <div class="youtube-channel mb-3">
+            <img
+              id="channel-avatar"
+              src="/static/images/placeholder.jpg"
+              alt="Channel Avatar"
+              class="channel-avatar"
+            />
+            <div class="channel-info">
+              <div id="channel-name" class="channel-name">Your Channel</div>
+              <div class="channel-stats">
+                <div class="channel-stat">
+                  <i class="fas fa-users"></i>
+                  <span id="subscriber-count">0</span> subscribers
+                </div>
+                <div class="channel-stat">
+                  <i class="fas fa-film"></i>
+                  <span id="video-count">0</span> videos
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-outline" id="refresh-connection-btn">
+              <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+          </div>
+
+          <div class="alert alert-success">
+            <div class="alert-icon"><i class="fas fa-check-circle"></i></div>
+            <div class="alert-content">
+              <div class="alert-title">Successfully Connected!</div>
+              <div class="alert-message">
+                Your YouTube channel is connected. You can now upload videos and
+                access analytics.
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-outline" id="disconnect-btn">
+              <i class="fas fa-unlink"></i> Disconnect Channel
+            </button>
+            <a href="/youtube/manage" class="btn btn-primary">
+              <i class="fas fa-cog"></i> Manage YouTube Settings
+            </a>
+          </div>
+        </div>
+
+        <div id="error-section" style="display: none">
+          <div class="alert alert-error">
+            <div class="alert-icon">
+              <i class="fas fa-exclamation-circle"></i>
+            </div>
+            <div class="alert-content">
+              <div class="alert-title">Connection Error</div>
+              <div class="alert-message" id="error-message">
+                There was an error connecting to YouTube. Please try again.
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary mt-3" id="retry-connection-btn">
+            <i class="fas fa-redo"></i> Retry Connection
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="/static/js/shorts_main.js"></script>
+  </body>
+</html>
