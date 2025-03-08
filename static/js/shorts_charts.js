@@ -15,7 +15,8 @@ function initializeAnalyticsCharts() {
   const endDate = document.getElementById("end-date").value;
 
   // Fetch analytics data from the API
-  fetch(`/api/analytics?start_date=${startDate}&end_date=${endDate}`)
+  const useRealData = localStorage.getItem("useRealData") === "true";
+  fetchfetch(`/api/analytics?start_date=${startDate}&end_date=${endDate}&use_real_data=${useRealData}`)
     .then((response) => response.json())
     .then((data) => {
       if (data.success) {
