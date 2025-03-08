@@ -1310,18 +1310,20 @@ class YouTubeShortsAutomationSystem:
     
     # ======== ENHANCED THUMBNAIL GENERATION ========
     
+# Replace the create_thumbnail method in youtube_shorts_automation.py with this version
+# This ensures AI thumbnails are named consistently with what the web interface expects
+
     def create_thumbnail(self, idea):
         """Create a thumbnail with retry logic and fallback. Optimized for Shorts."""
         if not self.api_keys["openai"]:
             print("OpenAI API key missing. Cannot generate thumbnail.")
             safe_title = self.sanitize_filename(idea['title'])
-            thumbnail_path = f"{self.config['directories']['thumbnails']}/{safe_title.replace(' ', '_')}.png"
+            thumbnail_path = f"{self.config['directories']['thumbnails']}/{safe_title}.png"
             
             return self._create_placeholder_thumbnail(
-            thumbnail_path, 
-            idea['title']
-        )
-        
+                thumbnail_path, 
+                idea['title']
+            )
         
         max_attempts = 3
         for attempt in range(max_attempts):
@@ -1434,8 +1436,11 @@ class YouTubeShortsAutomationSystem:
                                             if content_length == 0:
                                                 print("Warning: Image has zero content length")
                                             
-                                            # Save the image
-                                            thumbnail_path = f"{thumbnails_dir}/{self.sanitize_filename(idea['title']).replace(' ', '_')}.png"
+                                            # IMPORTANT FIX: Use consistent naming pattern without _Short suffix
+                                            # This ensures names match what the web interface expects
+                                            safe_title = self.sanitize_filename(idea['title'])
+                                            thumbnail_path = f"{thumbnails_dir}/{safe_title}.png"
+                                            
                                             with open(thumbnail_path, 'wb') as f:
                                                 for chunk in img_response.iter_content(chunk_size=8192):
                                                     if chunk:
@@ -1504,7 +1509,8 @@ class YouTubeShortsAutomationSystem:
         
         # If all attempts fail, create a placeholder
         print("All thumbnail generation attempts failed. Creating placeholder.")
-        thumbnail_path = f"{self.config['directories']['thumbnails']}/{idea['title'].replace(' ', '_')}.png"
+        safe_title = self.sanitize_filename(idea['title'])
+        thumbnail_path = f"{self.config['directories']['thumbnails']}/{safe_title}.png"
         if self._create_placeholder_thumbnail(thumbnail_path, idea['title'], vertical=True):
             return thumbnail_path
         else:
