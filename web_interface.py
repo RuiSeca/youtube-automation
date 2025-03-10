@@ -1854,7 +1854,7 @@ def calculate_success_rate():
     successful = len([j for j in job_history if j.get('status') == 'completed'])
     return int((successful / len(job_history)) * 100)
 
-def run_automation_job(job_id, niche, count):
+def run_automation_job(job_id, niche, count, voice_id=None):
     """Background task to run Shorts automation job."""
     try:
         # Update job status
@@ -1881,7 +1881,7 @@ def run_automation_job(job_id, niche, count):
             
             try:
                 # Call the detailed automation method with status updates
-                final_video = run_full_automation_with_status_updates(job_id, niche)
+                final_video = run_full_automation_with_status_updates(job_id, niche, voice_id)
                 
                 if final_video:
                     # Update progress after this Short is complete
@@ -1921,7 +1921,7 @@ def run_automation_job(job_id, niche, count):
             if job_id in current_jobs:
                 del current_jobs[job_id]
                 
-def run_full_automation_with_status_updates(job_id, niche):
+def run_full_automation_with_status_updates(job_id, niche, voice_id=None):
     """
     Run the full automation pipeline with job status updates back to the UI.
     This is a modified version of the automation.run_full_automation() method
@@ -1987,7 +1987,7 @@ def run_full_automation_with_status_updates(job_id, niche):
         max_audio_attempts = automation.config.get("api_settings", {}).get("retry_attempts", 3)
         for attempt in range(max_audio_attempts):
             current_jobs[job_id]['message'] = f'Generating voice-over (attempt {attempt+1}/{max_audio_attempts})...'
-            audio_file = automation.generate_voice_narration(script_data)
+            audio_file = automation.generate_voice_narration(script_data, voice_id)
             if audio_file:
                 break
             if attempt < max_audio_attempts - 1:  # Not the last attempt
