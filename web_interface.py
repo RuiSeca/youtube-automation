@@ -1153,6 +1153,8 @@ def run_automation():
     if request.method == 'POST':
         niche = request.form.get('niche', '')
         count = int(request.form.get('count', 1))
+        voice_id = request.form.get('voice_id', None)
+
         
         if not niche:
             return jsonify({
@@ -1175,7 +1177,7 @@ def run_automation():
         }
         
         # Start job in a background thread
-        thread = threading.Thread(target=run_automation_job, args=(job_id, niche, count))
+        thread = threading.Thread(target=run_automation_job, args=(job_id, niche, count, voice_id))
         thread.daemon = True
         thread.start()
         
@@ -1413,13 +1415,19 @@ def debug_thumbnails():
     print("\nChecking sample video paths:")
     videos = get_video_list(shorts_only=True)[:3]  # Get first 3 videos
     for video in videos:
-        title_base = os.path.splitext(video.get('path', ''))[0]
-        possible_thumbnail_name = f"{title_base}.png"
-        possible_thumbnail = os.path.join(thumbnail_dir, possible_thumbnail_name)
-        print(f"Video: {video.get('title')}")
+          # Get the original title
+        title = video.get('title', '')
+        
+        # Generate the same sanitized title that create_thumbnail uses
+        safe_title = automation.sanitize_filename(title)  # Use the method from your automation instance
+        
+        # Generate the expected thumbnail path
+        possible_thumbnail = os.path.join(thumbnail_dir, f"{safe_title}.png")
+        
+        print(f"Video: {title}")
         print(f"  Looking for thumbnail: {possible_thumbnail}")
         print(f"  Thumbnail exists: {os.path.exists(possible_thumbnail)}")
-    
+        
     print("===========================\n")
     return True
 
@@ -1659,6 +1667,26 @@ def regenerate_thumbnails():
         'message': f"Regenerated {count} thumbnails successfully"
     })
     
+@app.route('/api/voices')
+def get_voices():
+    """Get list of available voices from ElevenLabs."""
+    voices = automation.get_available_voices()
+    
+    # Add default voice at the top if not already in the list
+    default_voice = {
+        "id": "21m00Tcm4TlvDq8ikWAM",
+        "name": "Rachel (Default)"
+    }
+    
+    # Check if default voice is already in the list
+    if not any(voice["id"] == default_voice["id"] for voice in voices):
+        voices.insert(0, default_voice)
+    
+    return jsonify({
+        'success': True,
+        'voices': voices
+    })
+    
 # Helper functions for analytics data
 def generate_random_views_data(start_date, end_date):
     """Generate random views data for analytics demo."""
@@ -1849,18 +1877,20 @@ def run_automation_job(job_id, niche, count):
                     return
             
             # Update status message for this video
-            current_jobs[job_id]['message'] = f'Generating Short {i+1} of {count} for {niche}...'
-            current_jobs[job_id]['progress'] = 10 + (i * 90 // count)
+            current_jobs[job_id]['message'] = f'Starting Short {i+1} of {count} for {niche}...'
             
             try:
-                # Call the actual Shorts automation method
-                print(f"Starting real Shorts automation for video {i+1} with niche: {niche}")
-                automation.run_full_automation(niche)
+                # Call the detailed automation method with status updates
+                final_video = run_full_automation_with_status_updates(job_id, niche)
                 
-                # Update progress after this Short is complete
-                progress_per_video = 90 // count
-                current_jobs[job_id]['progress'] = min(95, 10 + ((i+1) * progress_per_video))
-                current_jobs[job_id]['message'] = f'Generated {i+1}/{count} Shorts for niche: {niche}'
+                if final_video:
+                    # Update progress after this Short is complete
+                    progress_per_video = 90 // count
+                    current_jobs[job_id]['progress'] = min(95, 10 + ((i+1) * progress_per_video))
+                    current_jobs[job_id]['message'] = f'Generated {i+1}/{count} Shorts for niche: {niche}'
+                else:
+                    # If the function returned None, there was an error
+                    current_jobs[job_id]['message'] = f'Error with Short {i+1} - continuing with next'
             except Exception as e:
                 print(f"Error generating Short {i+1}: {str(e)}")
                 current_jobs[job_id]['message'] = f'Error on Short {i+1}: {str(e)}'
@@ -1890,7 +1920,174 @@ def run_automation_job(job_id, niche, count):
             time.sleep(60)
             if job_id in current_jobs:
                 del current_jobs[job_id]
-
+                
+def run_full_automation_with_status_updates(job_id, niche):
+    """
+    Run the full automation pipeline with job status updates back to the UI.
+    This is a modified version of the automation.run_full_automation() method
+    that updates the current_jobs dictionary with progress information.
+    """
+    try:
+        print(f"Starting Shorts automation for niche: {niche}")
+        
+        # Verify API keys and update status
+        current_jobs[job_id]['message'] = 'Checking API connections...'
+        current_jobs[job_id]['progress'] = 6
+        
+        # Force shorts mode to be true (this is a Shorts-only system)
+        automation.config["shorts_mode"] = True
+        if "shorts_settings" not in automation.config:
+            automation.config["shorts_settings"] = {
+                "enabled": True,
+                "max_duration": 60,
+                "vertical_format": True,
+                "fast_paced": True
+            }
+        else:
+            automation.config["shorts_settings"]["enabled"] = True
+        
+        # Step 1: Generate content ideas specifically for Shorts
+        current_jobs[job_id]['message'] = 'Researching trending topics and generating Shorts ideas...'
+        current_jobs[job_id]['progress'] = 10
+        ideas = automation.generate_content_ideas(niche)
+        if not ideas:
+            current_jobs[job_id]['message'] = 'Failed to generate Shorts content ideas. Aborting.'
+            current_jobs[job_id]['status'] = 'failed'
+            return None
+        
+        # Select the best idea (not just random)
+        idea = automation._select_best_idea(ideas, niche)
+        print(f"Selected Shorts idea: {idea['title']}")
+        
+        # Update job status with selected idea
+        current_jobs[job_id]['message'] = f'Writing script for: "{idea["title"]}"...'
+        current_jobs[job_id]['progress'] = 20
+        
+        # Step 2: Generate script optimized for Shorts
+        script_data = None
+        max_script_attempts = automation.config.get("api_settings", {}).get("retry_attempts", 3)
+        for attempt in range(max_script_attempts):
+            current_jobs[job_id]['message'] = f'Creating engaging script (attempt {attempt+1}/{max_script_attempts})...'
+            script_data = automation.generate_script(idea)
+            if script_data:
+                break
+            if attempt < max_script_attempts - 1:  # Not the last attempt
+                current_jobs[job_id]['message'] = f'Retrying script generation (attempt {attempt+1} failed)...'
+                time.sleep(1)  # Brief pause
+        
+        if not script_data:
+            current_jobs[job_id]['message'] = 'Failed to generate Shorts script. Aborting.'
+            current_jobs[job_id]['status'] = 'failed'
+            return None
+        
+        # Step 3: Generate voice narration with retry
+        current_jobs[job_id]['message'] = 'Creating professional voice narration...'
+        current_jobs[job_id]['progress'] = 35
+        audio_file = None
+        max_audio_attempts = automation.config.get("api_settings", {}).get("retry_attempts", 3)
+        for attempt in range(max_audio_attempts):
+            current_jobs[job_id]['message'] = f'Generating voice-over (attempt {attempt+1}/{max_audio_attempts})...'
+            audio_file = automation.generate_voice_narration(script_data)
+            if audio_file:
+                break
+            if attempt < max_audio_attempts - 1:  # Not the last attempt
+                current_jobs[job_id]['message'] = f'Retrying voice narration (attempt {attempt+1} failed)...'
+                time.sleep(1)  # Brief pause
+        
+        if not audio_file:
+            current_jobs[job_id]['message'] = 'Failed to generate voice narration. Aborting.'
+            current_jobs[job_id]['status'] = 'failed'
+            return None
+        
+        # Step 4: Search and download vertical stock footage
+        current_jobs[job_id]['message'] = 'Searching for perfect vertical video clips...'
+        current_jobs[job_id]['progress'] = 50
+        
+        # Build search terms from the idea
+        search_terms = [idea['title']] + idea['key_points'] + idea['keywords']
+        all_video_urls = []
+        
+        # For Shorts, prioritize vertical format
+        for term in search_terms[:3]:  # Limit to first 3 terms
+            current_jobs[job_id]['message'] = f'Finding vertical footage for "{term}"...'
+            urls = automation.search_stock_footage(term, per_page=3, vertical=True)
+            if urls:
+                all_video_urls.extend(urls)
+        
+        # If we didn't get enough footage, try broader terms
+        if len(all_video_urls) < 3:
+            current_jobs[job_id]['message'] = 'Finding additional vertical footage...'
+            broader_terms = [niche, "social media", "vertical video", "shorts"]
+            for term in broader_terms:
+                if len(all_video_urls) >= 6:  # We have enough now
+                    break
+                urls = automation.search_stock_footage(term, per_page=3, vertical=True)
+                if urls:
+                    all_video_urls.extend(urls)
+        
+        # Download the clips
+        current_jobs[job_id]['message'] = 'Downloading video clips...'
+        current_jobs[job_id]['progress'] = 60
+        video_clips = automation.download_stock_footage(all_video_urls, idea['title'])
+        if not video_clips:
+            current_jobs[job_id]['message'] = 'Failed to download stock footage. Aborting.'
+            current_jobs[job_id]['status'] = 'failed'
+            return None
+        
+        # Step 5: Create thumbnail optimized for Shorts with retry
+        current_jobs[job_id]['message'] = 'Creating eye-catching thumbnail...'
+        current_jobs[job_id]['progress'] = 70
+        thumbnail_path = None
+        max_thumbnail_attempts = automation.config.get("api_settings", {}).get("retry_attempts", 3)
+        for attempt in range(max_thumbnail_attempts):
+            current_jobs[job_id]['message'] = f'Designing thumbnail (attempt {attempt+1}/{max_thumbnail_attempts})...'
+            thumbnail_path = automation.create_thumbnail(idea)
+            if thumbnail_path:
+                break
+            if attempt < max_thumbnail_attempts - 1:  # Not the last attempt
+                current_jobs[job_id]['message'] = f'Retrying thumbnail creation (attempt {attempt+1} failed)...'
+                time.sleep(1)  # Brief pause
+        
+        # Step 6: Assemble Shorts video
+        current_jobs[job_id]['message'] = 'Assembling final vertical Shorts video...'
+        current_jobs[job_id]['progress'] = 80
+        final_video = automation.assemble_shorts_video(audio_file, video_clips, idea['title'])
+        if not final_video:
+            current_jobs[job_id]['message'] = 'Failed to assemble Shorts video. Aborting.'
+            current_jobs[job_id]['status'] = 'failed'
+            return None
+        
+        # Step 7: Upload to YouTube as a Short (if enabled)
+        current_jobs[job_id]['message'] = 'Preparing to upload to YouTube...'
+        current_jobs[job_id]['progress'] = 90
+        
+        # Check if auto-upload is enabled in config
+        auto_upload = automation.config.get("shorts_settings", {}).get("auto_upload", True)
+        if auto_upload:
+            current_jobs[job_id]['message'] = 'Uploading to YouTube Shorts...'
+            video_id = automation.upload_to_youtube(final_video, idea, thumbnail_path)
+            if video_id:
+                current_jobs[job_id]['message'] = f'Shorts video uploaded successfully! 🎉 (ID: {video_id})'
+                print(f"Shorts video published successfully! ID: {video_id}")
+                print(f"Watch at: https://www.youtube.com/shorts/{video_id}")
+            else:
+                current_jobs[job_id]['message'] = f'Video created successfully but upload failed. Available locally.'
+        else:
+            current_jobs[job_id]['message'] = f'Video created successfully! Available locally (auto-upload disabled).'
+        
+        current_jobs[job_id]['progress'] = 100
+        print("Shorts automation pipeline completed successfully!")
+        print(f"Final Shorts video saved to: {final_video}")
+        return final_video
+    
+    except Exception as e:
+        current_jobs[job_id]['message'] = f'Error in automation process: {str(e)}'
+        current_jobs[job_id]['status'] = 'failed'
+        print(f"Error in run_full_automation_with_status_updates: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return None
+                
 # Add additional CSS for modals, charts, etc.
 @app.route('/static/css/additional.css')
 def serve_additional_css():

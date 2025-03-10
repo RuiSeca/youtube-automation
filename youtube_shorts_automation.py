@@ -14,6 +14,8 @@ Features:
 - Self-improving content selection
 - Performance tracking and analytics
 - Optimized for YouTube Shorts algorithm
+- Voice selection for narration
+- Expanded title templates for more variety
 """
 
 import os
@@ -312,6 +314,26 @@ class YouTubeShortsAutomationSystem:
             - Use visually striking tech demonstrations
             """
         
+        elif any(term in niche_lower for term in ["health", "fitness", "exercise", "workout", "diet"]):
+            base_prompt += """
+            For these health/fitness-related Shorts:
+            - Focus on quick workout moves or health tips
+            - Include impressive before/after transformations
+            - Highlight common health myths to debunk
+            - Use motivational hooks
+            - Make complex health concepts simple and actionable
+            """
+            
+        elif any(term in niche_lower for term in ["food", "cooking", "recipe", "baking", "kitchen"]):
+            base_prompt += """
+            For these food-related Shorts:
+            - Focus on quick recipes or cooking hacks
+            - Show dramatic food transformations
+            - Include unique flavor combinations
+            - Emphasize time-saving techniques
+            - Use vibrant visuals and mouth-watering descriptions
+            """
+        
         # Add time-awareness
         current_month = datetime.now().strftime("%B")
         current_year = datetime.now().year
@@ -350,15 +372,37 @@ class YouTubeShortsAutomationSystem:
             "{niche} Myth Busted!",
             "Try This {niche} Trick Today",
             "You're Doing {niche} Wrong! Here's Why",
-            "The {adj} Truth About {niche}"
+            "The {adj} Truth About {niche}",
+            # Additional templates
+            "How to {verb} Your {niche} Today",
+            "The {adj} {niche} Guide You Need",
+            "What No One Tells You About {niche}",
+            "{niche} Facts That Will Blow Your Mind",
+            "Stop Making These {niche} Mistakes",
+            "The Most {adj} {niche} Tips Ever",
+            "{niche} Hacks You Can't Miss",
+            "Transform Your {niche} with This One Trick",
+            "I Tried This {niche} Method and...",
+            "Why Most {niche} Advice Fails",
+            "One {niche} Secret That Changed Everything",
+            "The Fastest Way to {verb} Your {niche}",
+            "Never Do This With Your {niche}",
+            "This {niche} Trick Saved Me Hours",
+            "{n} Seconds to Better {niche} Results"
         ]
         
-        # Elements to fill templates
+        # Elements to fill templates - expanded with more variations
         elements = {
-            "n": [3, 5, 7, "These", "Top"],
-            "adj": ["Secret", "Quick", "Game-Changing", "Hidden", "Shocking", "Amazing"],
-            "verb": ["Transform", "Boost", "Hack", "Upgrade", "Fix", "Master"],
-            "noun": ["Strategy", "Technique", "Method", "Approach", "Hack"]
+            "n": [3, 5, 7, 10, "These", "Top", "Best", "Secret", "Quick", "Proven", "Essential", "Simple"],
+            "adj": ["Secret", "Quick", "Game-Changing", "Hidden", "Shocking", "Amazing", "Incredible", 
+                   "Mind-Blowing", "Powerful", "Effective", "Simple", "Easy", "Ultimate", "Essential",
+                   "Surprising", "Unbelievable", "Proven", "Brilliant", "Perfect", "Instant"],
+            "verb": ["Transform", "Boost", "Hack", "Upgrade", "Fix", "Master", "Improve", "Optimize", 
+                    "Revolutionize", "Supercharge", "Simplify", "Accelerate", "Enhance", "Perfect",
+                    "Maximize", "Double", "Unlock", "Elevate", "Streamline", "Conquer"],
+            "noun": ["Strategy", "Technique", "Method", "Approach", "Hack", "Trick", "Secret", "System", 
+                    "Formula", "Blueprint", "Framework", "Process", "Solution", "Principle", "Rule",
+                    "Guide", "Plan", "Shortcut", "Roadmap", "Protocol"]
         }
         
         # Finance-specific templates
@@ -367,7 +411,23 @@ class YouTubeShortsAutomationSystem:
             "This {niche} Mistake Costs You Money",
             "How To {verb} Your {niche} Today",
             "Save Money With This {niche} Trick",
-            "{n} Seconds To Better {niche} Results"
+            "{n} Seconds To Better {niche} Results",
+            # Additional finance templates
+            "The {niche} Strategy Millionaires Use",
+            "Double Your {niche} Returns With This",
+            "The {niche} Trick Banks Don't Want You To Know",
+            "How I Fixed My {niche} In One Day",
+            "{niche} Red Flags You're Ignoring",
+            "The {adj} {niche} Strategy for Beginners",
+            "Why Your {niche} Is Failing (And How to Fix It)",
+            "Passive {niche} Secrets Revealed",
+            "The {n} {niche} Rules You Must Follow",
+            "The Only {niche} Advice You'll Ever Need",
+            "This One {niche} Mistake Could Cost You Thousands",
+            "How to {verb} Your {niche} Portfolio in Minutes",
+            "I Tried This {niche} Hack and Made $500",
+            "The Easiest Way to {verb} Your {niche}",
+            "The {niche} Secret Wall Street Doesn't Share"
         ]
         
         # Tech-specific templates
@@ -376,20 +436,78 @@ class YouTubeShortsAutomationSystem:
             "The {niche} Feature You Never Knew Existed",
             "Try This {niche} Setting Right Now",
             "Update Your {niche} Settings Immediately",
-            "The Future of {niche} Is Already Here"
+            "The Future of {niche} Is Already Here",
+            # Additional tech templates
+            "Hidden {niche} Features You Need To Try",
+            "This {niche} Trick Makes Everything Faster",
+            "The {niche} Hack Developers Don't Tell You",
+            "Why Your {niche} Setup Is Wrong",
+            "{niche} Settings That Will Change Your Life",
+            "The Secret {niche} Menu You Didn't Know About",
+            "One {niche} Setting That Changes Everything",
+            "Make Your {niche} 10x Faster With This",
+            "The {adj} {niche} Shortcut Everyone Missed",
+            "How To Enable Hidden {niche} Features",
+            "The {adj} {niche} Feature Nobody Uses",
+            "I Found a Secret {niche} Code That Does This",
+            "Your {niche} Has a Built-in Tool You Never Noticed",
+            "The {niche} Algorithm Explained in 60 Seconds",
+            "Unlock Advanced {niche} Features With This Trick"
         ]
+        
+        # Health/fitness templates
+        health_templates = [
+            "This {niche} Habit Will Transform Your Body",
+            "The {adj} {niche} Routine You Need to Try",
+            "{n} Second {niche} Exercise That Works",
+            "The {niche} Mistake Ruining Your Progress",
+            "How I {verb} My {niche} In Just One Week",
+            "The {niche} Secret Fitness Pros Use",
+            "Try This {niche} Hack for Instant Results",
+            "The Only {niche} Move You Need To Know",
+            "Your {niche} Routine Is Wrong - Here's Why",
+            "The {niche} Myth That's Holding You Back",
+            "I Tried This {niche} Trick for 7 Days...",
+            "The Morning {niche} Habit That Changed Everything",
+            "This One {niche} Move Targets All Muscles",
+            "Why Most {niche} Advice Is Actually Harmful",
+            "How to {verb} Your {niche} Without Equipment"
+        ]
+        
+        # Food/cooking templates
+        food_templates = [
+            "The {adj} {niche} Recipe Under 60 Seconds",
+            "This {niche} Hack Will Change How You Cook",
+            "Never Make This {niche} Mistake Again",
+            "The {niche} Secret Chefs Don't Tell You",
+            "Try This {niche} Trick For Perfect Results",
+            "How To {verb} Your {niche} In Seconds",
+            "The Only {niche} Technique You Need",
+            "{n} {niche} Tips That Will Blow Your Mind",
+            "This {niche} Shortcut Saves Hours",
+            "The {niche} Hack That Changed My Cooking",
+            "I Tried This Viral {niche} Hack...",
+            "The Easiest Way to {verb} {niche} Ever",
+            "The {niche} Method Professional Chefs Use",
+            "Turn Boring {niche} Into Amazing In Seconds",
+            "The {adj} {niche} Recipe With Only 3 Ingredients"
+        ]
+        
+        # Select appropriate templates based on niche
+        if any(term in niche_lower for term in ["finance", "money", "invest", "trading", "crypto", "wealth"]):
+            niche_template_set = title_templates + finance_templates
+        elif any(term in niche_lower for term in ["tech", "technology", "software", "digital", "ai", "programming"]):
+            niche_template_set = title_templates + tech_templates
+        elif any(term in niche_lower for term in ["health", "fitness", "exercise", "workout", "diet"]):
+            niche_template_set = title_templates + health_templates
+        elif any(term in niche_lower for term in ["food", "cooking", "recipe", "baking", "kitchen"]):
+            niche_template_set = title_templates + food_templates
+        else:
+            niche_template_set = title_templates
         
         # Generate ideas based on templates
         template_ideas = []
-        niche_template_set = []
-        
-        # Select appropriate templates based on niche
-        if any(term in niche_lower for term in ["finance", "money", "invest", "trading"]):
-            niche_template_set = title_templates + finance_templates
-        elif any(term in niche_lower for term in ["tech", "technology", "software", "digital"]):
-            niche_template_set = title_templates + tech_templates
-        else:
-            niche_template_set = title_templates
+        niche_template_set = list(set(niche_template_set))  # Remove duplicates
         
         # Generate until we have enough ideas
         while len(template_ideas) < count:
@@ -432,7 +550,17 @@ class YouTubeShortsAutomationSystem:
             f"This {niche} hack could save you time and money. #shorts",
             f"The {niche} secret professionals don't want you to know!",
             f"Transform your approach to {niche} in just 60 seconds!",
-            f"You won't believe this {niche} fact! Follow for more tips."
+            f"You won't believe this {niche} fact! Follow for more tips.",
+            f"This {niche} trick will change everything. Must try!",
+            f"Learn this {niche} technique in under 60 seconds!",
+            f"The {niche} hack everyone needs to know. Game-changer!",
+            f"I wish I knew this {niche} tip sooner. Don't make my mistake!",
+            f"This {niche} method is going viral for a reason. Try it now!",
+            f"Secret {niche} strategy revealed in this quick video!",
+            f"Most people get {niche} wrong. Here's what to do instead.",
+            f"I tested this {niche} hack for a week. The results shocked me!",
+            f"This {niche} shortcut saves me hours every week.",
+            f"The {niche} tip that changed my life. Not clickbait!"
         ]
         
         # Return a random description
@@ -448,7 +576,15 @@ class YouTubeShortsAutomationSystem:
             "Compare before/after",
             "Share a surprising fact",
             "Ask a provocative question",
-            "Call to action"
+            "Call to action",
+            "Highlight common mistake",
+            "Show quick implementation",
+            "Explain return on investment",
+            "Show side-by-side comparison",
+            "Reveal insider secret",
+            "Share personal experience",
+            "Show transformation process",
+            "Provide actionable tip"
         ]
         
         # Generate 2-3 key points for Shorts
@@ -472,7 +608,8 @@ class YouTubeShortsAutomationSystem:
                       if word.lower() not in common_words and len(word) > 3]
         
         # Common additional keywords for Shorts
-        shorts_keywords = ["tiktok", "viral", "trending", "learning", "quicktips"]
+        shorts_keywords = ["tiktok", "viral", "trending", "learning", "quicktips", "howto", 
+                          "tutorial", "hack", "tip", "trick", "advice", "quick", "easy"]
         
         # Combine all keywords
         all_keywords = base_keywords + title_words + shorts_keywords
@@ -822,7 +959,7 @@ class YouTubeShortsAutomationSystem:
     # ======== ENHANCED SCRIPT GENERATION ========
    
     def sanitize_filename(self,filename):
-        invalid_chars = [':', '/', '\\', '?', '*', '"', '<', '>', '|']
+        invalid_chars = [':', '/', '\\', '?', '*', '"', '<', '>', '|', "'"]
         for char in invalid_chars:
             filename = filename.replace(char, '-')
              # Replace ellipsis with just 'etc'
@@ -980,11 +1117,38 @@ class YouTubeShortsAutomationSystem:
     
     # ======== ENHANCED VOICE NARRATION ========
     
-    def generate_voice_narration(self, script_data):
+    def get_available_voices(self):
+        """Get list of available voices from ElevenLabs API."""
+        if not self.api_keys["elevenlabs"]:
+            print("ElevenLabs API key missing. Cannot fetch voice list.")
+            return []
+        
+        try:
+            response = requests.get(
+                "https://api.elevenlabs.io/v1/voices",
+                headers={"xi-api-key": self.api_keys["elevenlabs"]}
+            )
+            
+            if response.status_code == 200:
+                voices = response.json().get("voices", [])
+                return [{"id": voice["voice_id"], "name": voice["name"]} for voice in voices]
+            else:
+                print(f"Error fetching voices: {response.status_code}")
+                print(response.text)
+                return []
+        except Exception as e:
+            print(f"Error in get_available_voices: {str(e)}")
+            return []
+    
+    def generate_voice_narration(self, script_data, voice_id=None):
         """Convert script to voice narration with error handling and fallback."""
         if not self.api_keys["elevenlabs"]:
             print("ElevenLabs API key missing. Cannot generate voice narration.")
             return None
+        
+        # Use default voice if none provided
+        if not voice_id:
+            voice_id = "21m00Tcm4TlvDq8ikWAM"  # Default voice ID
         
         # Extract narrator lines from the script
         narrator_lines = []
@@ -1025,7 +1189,7 @@ class YouTubeShortsAutomationSystem:
                     print(f"Processing voice chunk {i+1}/{len(chunks)} (attempt {attempt+1}), {len(chunk)} chars")
                     
                     response = requests.post(
-                        "https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM",  # Default voice ID
+                        f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",  # Using provided voice_id
                         headers={
                             "Accept": "audio/mpeg",
                             "Content-Type": "application/json",
@@ -1309,9 +1473,6 @@ class YouTubeShortsAutomationSystem:
         return downloaded_files
     
     # ======== ENHANCED THUMBNAIL GENERATION ========
-    
-# Replace the create_thumbnail method in youtube_shorts_automation.py with this version
-# This ensures AI thumbnails are named consistently with what the web interface expects
 
     def create_thumbnail(self, idea):
         """Create a thumbnail with retry logic and fallback. Optimized for Shorts."""
@@ -2267,7 +2428,7 @@ class YouTubeShortsAutomationSystem:
     
     # ======== SHORTS AUTOMATION PIPELINE ========
     
-    def run_full_automation(self, niche):
+    def run_full_automation(self, niche, voice_id=None):
         """Run the full automation pipeline for YouTube Shorts with enhanced resilience."""
         print(f"Starting Shorts automation for niche: {niche}")
         
@@ -2317,14 +2478,10 @@ class YouTubeShortsAutomationSystem:
         audio_file = None
         max_audio_attempts = self.config.get("api_settings", {}).get("retry_attempts", 3)
         for attempt in range(max_audio_attempts):
-            audio_file = self.generate_voice_narration(script_data)
+            audio_file = self.generate_voice_narration(script_data, voice_id)
             if audio_file:
                 break
             print(f"Voice narration attempt {attempt+1} failed. Retrying...")
-        
-        if not audio_file:
-            print("Failed to generate voice narration after multiple attempts. Aborting.")
-            return
         
         # Step 4: Search and download vertical stock footage with quality monitoring
         search_terms = [idea['title']] + idea['key_points'] + idea['keywords']

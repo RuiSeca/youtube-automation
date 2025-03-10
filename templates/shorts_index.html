@@ -139,6 +139,29 @@
             </div>
 
             <div class="form-group">
+              <label for="voice">Narrator Voice:</label>
+              <select id="voice" name="voice_id" class="form-control">
+                <option value="">Loading voices...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="template_style">Title Style:</label>
+              <select
+                id="template_style"
+                name="template_style"
+                class="form-control"
+              >
+                <option value="auto">Auto (Based on Niche)</option>
+                <option value="general">General</option>
+                <option value="finance">Finance-Focused</option>
+                <option value="tech">Tech-Focused</option>
+                <option value="health">Health & Fitness</option>
+                <option value="food">Food & Cooking</option>
+              </select>
+            </div>
+
+            <div class="form-group">
               <label for="style">Content Style:</label>
               <select id="style" name="style" class="form-control">
                 <option value="informative">Informative</option>
@@ -230,8 +253,8 @@
                 <div class="video-item">
                   <div class="video-thumbnail">
                     <div class="shorts-badge">#SHORTS</div>
-                    <img src="${thumbnailUrl}" 
-                      alt="${video.title}" 
+                    <img src="${thumbnailUrl}"
+                      alt="${video.title}"
                       onerror="this.onerror=null; this.src='/static/images/placeholder_vertical.jpg';">
                     <a href="#" class="play-button" data-video-path="${
                       video.path
@@ -306,7 +329,6 @@
             }
           })
           .catch((error) => console.error("Error fetching status:", error));
-      }
     </script>
   </body>
 </html>

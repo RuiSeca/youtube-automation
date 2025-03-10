@@ -765,3 +765,25 @@ document.addEventListener("DOMContentLoaded", function () {
   // Check connection status on page load
   checkConnectionStatus();
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+  // Fetch available voices
+  fetch("/api/voices")
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success && data.voices) {
+        const voiceSelect = document.getElementById("voice");
+        voiceSelect.innerHTML = "";
+
+        data.voices.forEach((voice) => {
+          const option = document.createElement("option");
+          option.value = voice.id;
+          option.textContent = voice.name;
+          voiceSelect.appendChild(option);
+        });
+      }
+    })
+    .catch((error) => {
+      console.error("Error fetching voices:", error);
+    });
+});
