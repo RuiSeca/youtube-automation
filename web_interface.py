@@ -1473,48 +1473,46 @@ def get_video_list(shorts_only=False):
             title_base = os.path.splitext(basename)[0]
             title = title_base.replace('_', ' ')
             
-            # Try to find a matching thumbnail
-            thumbnail_path = None
-            if is_short:
-                thumbnail_path = f"/static/images/placeholder_vertical.jpg"  # Vertical placeholder for Shorts
-            else:
-                thumbnail_path = f"/static/images/placeholder.jpg"  # Default
-                
+            # Initialize thumbnail path with placeholder
+            thumbnail_path = "/static/images/placeholder_vertical.jpg" if is_short else "/static/images/placeholder.jpg"
+            
+            # Get thumbnails directory
             thumbnail_dir = automation.config['directories'].get('thumbnails', 'thumbnails')
             
-            # Use just the basename without _Short suffix for the thumbnail
-            thumbnail_basename = f"{title_base}.png"
+            # IMPORTANT: Use the same sanitization method that's used for thumbnail creation
+            # This is the consistent way to handle filenames
+            clean_title = title
+            if "_Short" in clean_title:
+                clean_title = clean_title.replace("_Short", "")
+            safe_title = automation.sanitize_filename(clean_title)
+            primary_thumbnail_path = os.path.join(thumbnail_dir, f"{safe_title}.png")
             
-            # FIX: Try different thumbnail naming patterns
-            possible_thumbnails = [
-                # Original pattern (base name + .png)
-                os.path.join(thumbnail_dir, thumbnail_basename),
+            # Check if the primary thumbnail exists
+            if os.path.exists(primary_thumbnail_path):
+                thumbnail_filename = os.path.basename(primary_thumbnail_path)
+                thumbnail_path = f"/thumbnails/{thumbnail_filename}"
+                print(f"Found thumbnail at {primary_thumbnail_path}")
+            else:
+                # If primary not found, try a few fallbacks for backward compatibility
+                fallback_paths = [
+                    # Original pattern (base name + .png)
+                    os.path.join(thumbnail_dir, f"{title_base}.png"),
+                    # Without _Short suffix
+                    os.path.join(thumbnail_dir, f"{title_base.replace('_Short', '')}.png"),
+                    # With spaces replaced by underscores
+                    os.path.join(thumbnail_dir, f"{title.replace(' ', '_')}.png")
+                ]
                 
-                # Try without _Short suffix
-                os.path.join(thumbnail_dir, title_base.replace("_Short", "") + ".png"),
-                
-                # Try with sanitized title
-                os.path.join(thumbnail_dir, title.replace(" ", "_") + ".png"),
-                
-                # Try just the video title part before any suffix
-                os.path.join(thumbnail_dir, title_base.split('_Short')[0] + ".png")
-            ]
-            
-            # Check all possible patterns
-            found_thumbnail = False
-            for possible_thumbnail in possible_thumbnails:
-                if os.path.exists(possible_thumbnail):
-                    # Get just the filename for the URL path
-                    thumbnail_filename = os.path.basename(possible_thumbnail)
-                    thumbnail_path = f"/thumbnails/{thumbnail_filename}"
-                    found_thumbnail = True
-                    print(f"Found thumbnail at {possible_thumbnail}")
-                    break
-            
-            if not found_thumbnail:
-                # Debug which thumbnail we were looking for
-                print(f"Thumbnail not found at {possible_thumbnails[0]}, using placeholder")
-            
+                for path in fallback_paths:
+                    if os.path.exists(path):
+                        thumbnail_filename = os.path.basename(path)
+                        thumbnail_path = f"/thumbnails/{thumbnail_filename}"
+                        print(f"Found thumbnail using fallback path: {path}")
+                        break
+                else:
+                    print(f"No thumbnail found for video '{title}', using placeholder")
+                    print(f"Primary path checked: {primary_thumbnail_path}")
+                    
             # Get file modification time as date
             mtime = os.path.getmtime(video_file)
             date = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d')
